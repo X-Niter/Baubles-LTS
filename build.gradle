@@ -113,7 +113,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
+    minecraft 'net.minecraftforge:forge:1.19.2-43.0.0'
 
     if (project.use_mixins.toBoolean()) {
         compileOnly fg.deobf('zone.rong:mixinbooter:5.0')
