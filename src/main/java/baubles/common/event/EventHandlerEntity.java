@@ -34,28 +34,7 @@ import java.util.*;
 
 public class EventHandlerEntity {
 
-	private HashMap<UUID,ItemStack[]> baublesSync = new HashMap<UUID,ItemStack[]>();
-
-	@SubscribeEvent
-	public void cloneCapabilitiesEvent(PlayerEvent.Clone event)
-	{
-		try {
-			BaublesContainer bco = (BaublesContainer)BaublesApi.getBaublesHandler(event.getOriginal());
-			NBTTagCompound nbt = bco.serializeNBT();
-			BaublesContainer bcn = (BaublesContainer) BaublesApi.getBaublesHandler(event.getEntityPlayer());
-			bcn.deserializeNBT(nbt);
-		} catch (Exception e) {
-			Baubles.log.error("Could not clone player [" + event.getOriginal().getName() + "] baubles when changing dimensions");
-		}
-	}
-
-	@SubscribeEvent
-	public void attachCapabilitiesPlayer(AttachCapabilitiesEvent<Entity> event) {
-		if (event.getObject() instanceof EntityPlayer) {
-			event.addCapability(new ResourceLocation(Baubles.MODID,"container"),
-					new BaublesContainerProvider(new BaublesContainer()));
-		}
-	}
+	private HashMap<UUID, ItemStack[]> baublesSync = new HashMap<UUID, ItemStack[]>();
 
 	@SubscribeEvent
 	public void playerJoin(EntityJoinWorldEvent event) {
@@ -75,8 +54,7 @@ public class EventHandlerEntity {
 	}
 
 	@SubscribeEvent
-	public void onPlayerLoggedOut(PlayerLoggedOutEvent event)
-	{
+	public void onPlayerLoggedOut(PlayerLoggedOutEvent event) {
 		baublesSync.remove(event.player.getUniqueID());
 	}
 
@@ -85,10 +63,10 @@ public class EventHandlerEntity {
 		// player events
 		if (event.phase == TickEvent.Phase.END) {
 			EntityPlayer player = event.player;
-			IBaublesItemHandler baubles = BaublesApi.getBaublesHandler(player);
-			for (int i = 0; i < baubles.getSlots(); i++) {
+			BaubleStorage baubles = BaublesCapabilityManager.asBaublesPlayer(player).getBaubleStorage();
+			for (int i = 0; i < baubles.getActualSize(); i++) {
 				ItemStack stack = baubles.getStackInSlot(i);
-				IBauble bauble = stack.getCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null);
+				IBauble bauble = stack.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null);
 				if (bauble != null) {
 					bauble.onWornTick(stack, player);
 				}
@@ -99,38 +77,39 @@ public class EventHandlerEntity {
 		}
 	}
 
-	private void syncBaubles(EntityPlayer player, IBaublesItemHandler baubles) {
+	// TODO: OLD
+	private void syncBaubles(EntityPlayer player, BaubleStorage baubles) {
 		ItemStack[] items = baublesSync.get(player.getUniqueID());
 		if (items == null) {
-			items = new ItemStack[baubles.getSlots()];
+			items = new ItemStack[baubles.getActualSize()];
 			Arrays.fill(items, ItemStack.EMPTY);
 			baublesSync.put(player.getUniqueID(), items);
 		}
-		if (items.length != baubles.getSlots()) {
+		if (items.length != baubles.getActualSize()) {
 			ItemStack[] old = items;
-			items = new ItemStack[baubles.getSlots()];
+			items = new ItemStack[baubles.getActualSize()];
 			System.arraycopy(old, 0, items, 0, Math.min(old.length, items.length));
 			baublesSync.put(player.getUniqueID(), items);
 		}
 		Set<EntityPlayer> receivers = null;
-		for (int i = 0; i < baubles.getSlots(); i++) {
+		for (int i = 0; i < baubles.getActualSize(); i++) {
 			ItemStack stack = baubles.getStackInSlot(i);
-			IBauble bauble = stack.getCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null);
+			IBauble bauble = stack.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null);
 			if (baubles.isChanged(i) || bauble != null && bauble.willAutoSync(stack, player) && !ItemStack.areItemStacksEqual(stack, items[i])) {
 				if (receivers == null) {
 					receivers = new HashSet<>(((WorldServer) player.world).getEntityTracker().getTrackingPlayers(player));
 					receivers.add(player);
 				}
 				syncSlot(player, i, stack, receivers);
-				baubles.setChanged(i,false);
-				items[i] = stack == null ? ItemStack.EMPTY : stack.copy();
+				baubles.setChanged(i, false);
+				items[i] = stack.copy();
 			}
 		}
 	}
 
 	private void syncSlots(EntityPlayer player, Collection<? extends EntityPlayer> receivers) {
-		IBaublesItemHandler baubles = BaublesApi.getBaublesHandler(player);
-		for (int i = 0; i < baubles.getSlots(); i++) {
+		BaubleStorage baubles = BaublesCapabilityManager.asBaublesPlayer(player).getBaubleStorage();
+		for (int i = 0; i < baubles.getActualSize(); i++) {
 			syncSlot(player, i, baubles.getStackInSlot(i), receivers);
 		}
 	}
@@ -147,14 +126,13 @@ public class EventHandlerEntity {
 		if (event.getEntity() instanceof EntityPlayer
 				&& !event.getEntity().world.isRemote
 				&& !event.getEntity().world.getGameRules().getBoolean("keepInventory")) {
-			dropItemsAt(event.getEntityPlayer(),event.getDrops(),event.getEntityPlayer());
+			dropItemsAt(event.getEntityPlayer(), event.getDrops(), event.getEntityPlayer());
 		}
 	}
 
 	public void dropItemsAt(EntityPlayer player, List<EntityItem> drops, Entity e) {
-		IBaublesItemHandler baubles = BaublesApi.getBaublesHandler(player);
-		for (int i = 0; i < baubles.getSlots(); ++i) {
-
+		BaubleStorage baubles = BaublesCapabilityManager.asBaublesPlayer(player).getBaubleStorage();
+		for (int i = baubles.getSize(); i >= 0; --i) {
 			if (!baubles.getStackInSlot(i).isEmpty()) {
 				EntityItem ei = new EntityItem(e.world,
 						e.posX, e.posY + e.getEyeHeight(), e.posZ,
@@ -162,48 +140,35 @@ public class EventHandlerEntity {
 				ei.setPickupDelay(40);
 				float f1 = e.world.rand.nextFloat() * 0.5F;
 				float f2 = e.world.rand.nextFloat() * (float) Math.PI * 2.0F;
-				ei.motionX = (double) (-MathHelper.sin(f2) * f1);
-				ei.motionZ = (double) (MathHelper.cos(f2) * f1);
+				ei.motionX = -MathHelper.sin(f2) * f1;
+				ei.motionZ = MathHelper.cos(f2) * f1;
 				ei.motionY = 0.20000000298023224D;
 				drops.add(ei);
-				baubles.setStackInSlot(i, ItemStack.EMPTY);
+				baubles.removeItemFromSlot(i);
 			}
 		}
 	}
+
 	@SubscribeEvent
 	public void onBaubleRightClick(PlayerInteractEvent.RightClickItem event) {
 		EntityPlayer playerEntity = event.getEntityPlayer();
 		ItemStack stack = event.getItemStack();
 
-		IBaublesItemHandler baubles = BaublesApi.getBaublesHandler(playerEntity);
-
 		BaublesApi.getOBaubles(stack).ifPresent(eBaubles -> {
 			if (eBaubles.canRightClickEquip()) {
-				BaublesApi.getOBaublesHandler(playerEntity).ifPresent(handler -> {
-
+				if (eBaubles.canEquip(stack, playerEntity)) {
 					if (!playerEntity.world.isRemote) {
-
-						if (eBaubles.canEquip(stack, playerEntity)) {
-
-							for (int i = 0; i < baubles.getSlots(); i++) {
-								baubles.getStackInSlot(i);
-								if (baubles.getStackInSlot(i).isEmpty() && baubles.isItemValidForSlot(i, playerEntity.getHeldItem(playerEntity.getActiveHand()), playerEntity)) {
-									baubles.setStackInSlot(i, playerEntity.getHeldItem(playerEntity.getActiveHand()).copy());
-									if (!playerEntity.capabilities.isCreativeMode && !playerEntity.isDead || !playerEntity.isCreative() && !playerEntity.isDead) {
-										playerEntity.inventory.setInventorySlotContents(playerEntity.inventory.currentItem, ItemStack.EMPTY);
-										stack.shrink(1);
-										event.setCancellationResult(EnumActionResult.SUCCESS);
-										event.setCanceled(true);
-										return;
-									}
-								}
-							}
+						BaublesCapabilityManager.asBaublesPlayer(playerEntity).getBaubleStorage().addItem(stack);
+						if (!playerEntity.isDead && (!playerEntity.capabilities.isCreativeMode || !playerEntity.isCreative())) {
+							stack.shrink(1);
+							event.setCancellationResult(EnumActionResult.SUCCESS);
+							event.setCanceled(true);
 						}
-					} else {
-						event.setCancellationResult(EnumActionResult.SUCCESS);
-						event.setCanceled(true);
 					}
-				});
+				} else {
+					event.setCancellationResult(EnumActionResult.SUCCESS);
+					event.setCanceled(true);
+				}
 			}
 		});
 	}

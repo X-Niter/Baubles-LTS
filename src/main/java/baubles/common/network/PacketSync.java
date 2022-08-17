@@ -1,8 +1,6 @@
 package baubles.common.network;
 
-import baubles.api.BaublesApi;
-import baubles.api.cap.BaublesContainer;
-import baubles.api.cap.IBaublesItemHandler;
+import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.Baubles;
 import baubles.common.Config;
 import io.netty.buffer.ByteBuf;
@@ -19,7 +17,6 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 import java.io.IOException;
-import java.util.SortedMap;
 
 public class PacketSync implements IMessage {
 
@@ -32,8 +29,6 @@ public class PacketSync implements IMessage {
 	private ItemStack stack;
 	byte slot=0;
 	ItemStack bauble;
-
-	private SortedMap<String, BaublesContainer> map;
 
 	private String baubleId;
 
@@ -89,14 +84,12 @@ public class PacketSync implements IMessage {
 				}
 				Entity p = world.getEntityByID(message.playerId);
 				if (p instanceof EntityPlayer) {
-					IBaublesItemHandler baubles = BaublesApi.getBaublesHandler((EntityPlayer) p);
-					baubles.setStackInSlot(message.slot, message.bauble);
+					BaublesCapabilityManager.asBaublesPlayer((EntityPlayer) p).getBaubleStorage().setStackInSlot(message.slot, message.bauble);
 				}
-				if (Config.useCurioGUI) {
-					if (p instanceof EntityLivingBase) {
-						BaublesApi.getOBaublesHandler((EntityLivingBase) p).ifPresent(handler -> handler.setStackInSlot(message.baubleId, message.slotId, message.stack));
-					}
-				}
+				/*else if (p instanceof EntityLivingBase) {
+					// TODO: might not work cuz old code
+					//BaublesApi.getOBaublesHandler((EntityLivingBase) p).ifPresent(handler -> handler.setStackInSlot(message.baubleId, message.slotId, message.stack));
+				}*/
 			}});
 			return null;
 		}

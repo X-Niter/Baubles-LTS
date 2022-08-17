@@ -1,19 +1,9 @@
 package baubles.common;
 
 import baubles.api.BaubleType;
-import baubles.api.BaublesApi;
-import baubles.api.IBauble;
-import baubles.api.cap.BaubleItem;
-import baubles.api.cap.BaublesCapabilities;
-import baubles.api.cap.BaublesCapabilities.CapabilityBaubles;
-import baubles.api.cap.BaublesContainer;
-import baubles.api.cap.IBaublesItemHandler;
-import baubles.api.modcom.BaublesModCom;
-import baubles.client.ClientProxy;
+import baubles.api.cap.*;
 import baubles.common.event.CommandBaubles;
 import baubles.common.network.PacketHandler;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
@@ -27,8 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-
-import static net.minecraftforge.registries.ForgeRegistry.DEBUG;
 
 @Mod(
 		modid = Baubles.MODID, 
@@ -68,21 +56,19 @@ public class Baubles {
 		}
 
 
-		CapabilityManager capabilityManager = CapabilityManager.INSTANCE;
+		// Init the capabilities
+		BaublesCapabilityManager.init();
+		// TODO: might delete
+		//CapabilityManager.INSTANCE.register(IBaublesItemHandler.class, new CapabilityBaubles<>(), BaublesContainer::new);
 
-		capabilityManager.register
-				(
-						IBaublesItemHandler.class,
-						new CapabilityBaubles<>(),
-						BaublesContainer::new
-				);
-
-		capabilityManager.register
+		// TODO: might delete
+		/*CapabilityManager.INSTANCE.register
 				(
 						IBauble.class,
 						new BaublesCapabilities.CapabilityItemBaubleStorage(),
 						() -> new BaubleItem(BaubleType.TRINKET)
-				);
+				);*/
+
 
 		proxy.registerEventHandlers();
 		PacketHandler.init();

@@ -1,7 +1,6 @@
 package baubles.api.inv;
 
-import baubles.api.cap.BaublesContainer;
-import baubles.api.cap.IBaublesItemHandler;
+import baubles.api.cap.IBaubleStorage;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
@@ -11,16 +10,16 @@ import net.minecraft.util.text.TextComponentString;
 import java.util.SortedMap;
 
 public class BaublesInventoryWrapper implements IInventory {
-	final IBaublesItemHandler handler;
+	final IBaubleStorage handler;
 	final EntityPlayer player;
 
-	public BaublesInventoryWrapper(IBaublesItemHandler handler) {
+	public BaublesInventoryWrapper(IBaubleStorage handler) {
 		super();
 		this.handler = handler;
 		this.player = null;
 	}
 
-	public BaublesInventoryWrapper(IBaublesItemHandler handler, EntityPlayer player) {
+	public BaublesInventoryWrapper(IBaubleStorage handler, EntityPlayer player) {
 		super();
 		this.handler = handler;
 		this.player = player;
@@ -43,7 +42,7 @@ public class BaublesInventoryWrapper implements IInventory {
 
 	@Override
 	public int getSizeInventory() {
-		return handler.getSlots();
+		return handler.getActualSize();
 	}
 
 	@Override

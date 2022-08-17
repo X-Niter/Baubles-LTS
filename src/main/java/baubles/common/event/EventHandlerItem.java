@@ -1,7 +1,7 @@
 package baubles.common.event;
 
 import baubles.api.IBauble;
-import baubles.api.cap.BaublesCapabilities;
+import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.Baubles;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
@@ -31,22 +31,22 @@ public class EventHandlerItem
  	public void itemCapabilityAttach(AttachCapabilitiesEvent<ItemStack> event)
  	{
 		ItemStack stack = event.getObject();
-		if (stack.isEmpty() || !(stack.getItem() instanceof IBauble) || stack.hasCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null)
-				|| event.getCapabilities().values().stream().anyMatch(c -> c.hasCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null)))
+		if (stack.isEmpty() || !(stack.getItem() instanceof IBauble) || stack.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)
+				|| event.getCapabilities().values().stream().anyMatch(c -> c.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)))
 			return;
 
 		event.addCapability(capabilityResourceLocation, new ICapabilityProvider() {
 
 			@Override
 			public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
-				return capability == BaublesCapabilities.CAPABILITY_ITEM_BAUBLE;
+				return capability == BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE;
 			}
 
 			@Nullable
 			@Override
 			public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
-				return capability == BaublesCapabilities.CAPABILITY_ITEM_BAUBLE
-						? BaublesCapabilities.CAPABILITY_ITEM_BAUBLE.cast((IBauble) stack.getItem())
+				return capability == BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE
+						? BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE.cast((IBauble) stack.getItem())
 						: null;
 			}
 		});

@@ -1,4 +1,5 @@
 1.12.2-1.6.0
+- Added infinite slots and reworked the capability side of the mod Thanks to(Jubiman)
 - XNiter(Me) Created fork of Baubles
 - Maintaining group & class schema to allow drop in replacement
 - Forge Gradle Update to 5

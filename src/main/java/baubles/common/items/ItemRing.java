@@ -1,9 +1,9 @@
 package baubles.common.items;
 
 import baubles.api.BaubleType;
-import baubles.api.BaublesApi;
 import baubles.api.IBauble;
-import baubles.api.cap.IBaublesItemHandler;
+import baubles.api.cap.BaubleStorage;
+import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.Baubles;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
@@ -64,8 +64,8 @@ public class ItemRing extends Item implements IBauble
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand) {
 		if(!world.isRemote) {
-			IBaublesItemHandler baubles = BaublesApi.getBaublesHandler(player);
-			for (int i = 0; i < baubles.getSlots(); i++)
+			BaubleStorage baubles = BaublesCapabilityManager.asBaublesPlayer(player).getBaubleStorage();
+			for (int i = 0; i < baubles.getActualSize(); i++)
 				if ((baubles.getStackInSlot(i) == null || baubles.getStackInSlot(i).isEmpty()) && baubles.isItemValidForSlot(i, player.getHeldItem(hand), player)) {
 					baubles.setStackInSlot(i, player.getHeldItem(hand).copy());
 					if (!player.capabilities.isCreativeMode) {
@@ -75,7 +75,7 @@ public class ItemRing extends Item implements IBauble
 					break;
 				}
 		}
-		return new ActionResult<ItemStack>(EnumActionResult.SUCCESS, player.getHeldItem(hand));
+		return new ActionResult<>(EnumActionResult.SUCCESS, player.getHeldItem(hand));
 	}
 
 	@Override

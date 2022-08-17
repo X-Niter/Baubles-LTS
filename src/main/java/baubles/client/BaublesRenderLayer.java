@@ -10,8 +10,8 @@
  */
 package baubles.client;
 
-import baubles.api.BaublesApi;
-import baubles.api.cap.IBaublesItemHandler;
+import baubles.api.cap.BaublesCapabilityManager;
+import baubles.api.cap.IBaubleStorage;
 import baubles.api.render.IRenderBauble;
 import baubles.api.render.IRenderBauble.RenderType;
 import baubles.common.Config;
@@ -29,11 +29,11 @@ public final class BaublesRenderLayer implements LayerRenderer<EntityPlayer> {
 
 	@Override
 	public void doRenderLayer(@Nonnull EntityPlayer player, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
-		
+		// TODO: fix rendering?
 		if(!Config.renderBaubles || player.getActivePotionEffect(MobEffects.INVISIBILITY) != null)
 			return;
 
-		IBaublesItemHandler inv = BaublesApi.getBaublesHandler(player);
+		IBaubleStorage inv = BaublesCapabilityManager.asBaublesPlayer(player).getBaubleStorage();
 
 		dispatchRenders(inv, player, RenderType.BODY, partialTicks);
 
@@ -49,8 +49,8 @@ public final class BaublesRenderLayer implements LayerRenderer<EntityPlayer> {
 		GlStateManager.popMatrix();
 	}
 
-	private void dispatchRenders(IBaublesItemHandler inv, EntityPlayer player, RenderType type, float partialTicks) {
-		for(int i = 0; i < inv.getSlots(); i++) {
+	private void dispatchRenders(IBaubleStorage inv, EntityPlayer player, RenderType type, float partialTicks) {
+		for(int i = 0; i < inv.getActualSize(); i++) {
 			ItemStack stack = inv.getStackInSlot(i);
 			if(stack != null && !stack.isEmpty()) {
 				Item item = stack.getItem();

@@ -1,10 +1,9 @@
 package baubles.common.event;
 
 import baubles.api.BaubleType;
-import baubles.api.BaublesApi;
 import baubles.api.IBauble;
-import baubles.api.cap.BaublesCapabilities;
-import baubles.api.cap.IBaublesItemHandler;
+import baubles.api.cap.BaublesCapabilityManager;
+import baubles.api.cap.IBaubleStorage;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -67,14 +66,15 @@ public class CommandBaubles extends CommandBase {
 				return;
 			}
 
-			IBaublesItemHandler baubles = BaublesApi.getBaublesHandler(entityplayermp);
+			//IBaublesItemHandler baubles = BaublesApi.getBaublesHandler(entityplayermp);
+			IBaubleStorage baubles = BaublesCapabilityManager.asBaublesPlayer(entityplayermp).getBaubleStorage();
 
 			if (args[0].equalsIgnoreCase("view")) {
 				sender.sendMessage(new TextComponentTranslation("\u00a73" + "message.showing_baubles_for " + entityplayermp.getName()));
-				for (int a = 0; a<baubles.getSlots();a++) {
+				for (int a = 0; a<baubles.getActualSize();a++) {
 					ItemStack st = baubles.getStackInSlot(a);
-					if (!st.isEmpty() && st.hasCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null)) {
-						IBauble bauble = st.getCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null);
+					if (!st.isEmpty() && st.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)) {
+						IBauble bauble = st.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null);
 						BaubleType bt = bauble.getBaubleType(st);
 						sender.sendMessage(new TextComponentTranslation("\u00a73 [message.slot "+a+"] "+bt+" "+st.getDisplayName()));
 					}
@@ -84,7 +84,7 @@ public class CommandBaubles extends CommandBase {
 				if (args.length>=3) {
 					int slot = -1;
 					try { slot = Integer.parseInt(args[2]); } catch (Exception e) {}
-					if (slot<0 || slot >= baubles.getSlots()) {
+					if (slot<0 || slot >= baubles.getActualSize()) {
 						sender.sendMessage(new TextComponentTranslation("\u00a7c" + "message.invalid_arguments"));
 						sender.sendMessage(new TextComponentTranslation("\u00a7c" + "message.use_help_command"));
 					} else {
@@ -93,7 +93,7 @@ public class CommandBaubles extends CommandBase {
 						entityplayermp.sendMessage(new TextComponentTranslation("\u00a74Your baubles slot "+slot+" has been cleared by admin "+sender.getName()));
 					}
 				} else {
-					for (int a = 0; a<baubles.getSlots();a++) {
+					for (int a = 0; a<baubles.getActualSize();a++) {
 						baubles.setStackInSlot(a, ItemStack.EMPTY);
 					}
 					sender.sendMessage(new TextComponentTranslation("\u00a73Cleared all baubles slots for "+entityplayermp.getName()));

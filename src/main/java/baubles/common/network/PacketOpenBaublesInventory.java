@@ -49,7 +49,6 @@ public class PacketOpenBaublesInventory implements IMessage, IMessageHandler<Pac
 				ctx.getServerHandler().player.openContainer.onContainerClosed(ctx.getServerHandler().player);
 				ctx.getServerHandler().player.openGui(Baubles.instance, Baubles.GUI, ctx.getServerHandler().player.world, 0, 0, 0);
 			}
-
 		}});
 		return null;
 	}

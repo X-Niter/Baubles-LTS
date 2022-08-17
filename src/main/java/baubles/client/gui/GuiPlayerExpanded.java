@@ -1,11 +1,12 @@
 package baubles.client.gui;
 
 import baubles.api.BaublesApi;
+import baubles.api.cap.BaubleStorage;
+import baubles.api.cap.BaublesCapabilityManager;
 import baubles.client.ClientProxy;
 import baubles.common.Baubles;
 import baubles.common.Config;
 import baubles.common.container.ContainerPlayerExpanded;
-import baubles.common.container.SlotBauble;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.client.gui.inventory.GuiInventory;
@@ -58,21 +59,6 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 	}
 
 	/**
-	 * Called from the main game loop to update the screen.
-	 */
-	@Override
-	public void updateScreen()
-	{
-		if (!Config.useCurioGUI) {
-			((ContainerPlayerExpanded) inventorySlots).baubles.setEventBlock(false);
-			updateActivePotionEffects();
-			resetGuiLeft();
-		}
-		super.updateScreen();
-
-	}
-
-	/**
 	 * Adds the buttons (and other controls) to the screen in question.
 	 */
 	@Override
@@ -101,21 +87,17 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 	 * Draw the foreground layer for the GuiContainer (everything in front of the items)
 	 */
 	@Override
-	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY)
-	{
-		if (!Config.useCurioGUI) {
-			this.fontRenderer.drawString(I18n.format("container.crafting"), 115, 8, 4210752);
-		} else {
-			this.fontRenderer.drawString(I18n.format("container.crafting"), 97, 8, 4210752);
+	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+		this.fontRenderer.drawString(I18n.format("container.crafting"), 97, 8, 4210752);
 
-			if (this.mc.player.inventory.getItemStack().isEmpty() && this.getSlotUnderMouse() != null) {
+			/*if (this.mc.player.inventory.getItemStack().isEmpty() && this.getSlotUnderMouse() != null) {
 				Slot slot = this.getSlotUnderMouse();
 				if (slot instanceof SlotBauble && !slot.getHasStack()) {
 					SlotBauble slotBauble = (SlotBauble)slot;
 					this.drawHoveringText(slotBauble.getSlotName(), mouseX - this.guiLeft, mouseY - this.guiTop);
 				}
-			}
-		}
+			}*/
+
 	}
 
 	/**
@@ -135,16 +117,13 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		if (!Config.useCurioGUI) {
-			this.mc.getTextureManager().bindTexture(background);
-		} else {
-			this.mc.getTextureManager().bindTexture(GuiInventory.INVENTORY_BACKGROUND);
-		}
+
+		this.mc.getTextureManager().bindTexture(GuiInventory.INVENTORY_BACKGROUND);
 		int k = this.guiLeft;
 		int l = this.guiTop;
 		this.drawTexturedModalRect(k, l, 0, 0, this.xSize, this.ySize);
 
-		if (!Config.useCurioGUI) {
+		/*if (!Config.useCurioGUI) {
 			for (int i1 = 0; i1 < this.inventorySlots.inventorySlots.size(); ++i1) {
 				Slot slot = (Slot) this.inventorySlots.inventorySlots.get(i1);
 				if (slot.getHasStack() && slot.getSlotStackLimit() == 1) {
@@ -152,9 +131,8 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 				}
 			}
 
-		} else {
-
-			BaublesApi.getOBaublesHandler(this.mc.player).ifPresent(handler -> {
+		} else {*/
+			/*BaublesApi.getOBaublesHandler(this.mc.player).ifPresent(handler -> {
 				int slotCount = handler.getSlots();
 				int upperHeight = 7 + slotCount * 18;
 				this.mc.getTextureManager().bindTexture(CURIO_INVENTORY);
@@ -167,9 +145,22 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 					this.mc.getTextureManager().bindTexture(CREATIVE_INVENTORY_TABS);
 					this.drawTexturedModalRect(k - 34, l + 12 + (int)(127f * this.currentScroll), 232, 0, 12, 15);
 				}
-			});
+			});*/
+		//}
 
+		int slotCount =  BaublesCapabilityManager.asBaublesPlayer(mc.player).getBaubleStorage().getActualSize();
+		int upperHeight = 7 + slotCount * 18;
+		this.mc.getTextureManager().bindTexture(CURIO_INVENTORY);
+		this.drawTexturedModalRect(k - 26, l + 4, 0, 0, 27, upperHeight);
+
+		if (slotCount <= 8) {
+			this.drawTexturedModalRect(k - 26, l + 4 + upperHeight, 0, 151, 27, 7);
+		} else {
+			this.drawTexturedModalRect(k - 42, l + 4, 27, 0, 23, 158);
+			this.mc.getTextureManager().bindTexture(CREATIVE_INVENTORY_TABS);
+			this.drawTexturedModalRect(k - 34, l + 12 + (int)(127f * this.currentScroll), 232, 0, 12, 15);
 		}
+
 		GuiInventory.drawEntityOnScreen(k + 51, l + 75, 30, (float) (k + 51) - this.oldMouseX, (float) (l + 75 - 50) - this.oldMouseY, this.mc.player);
 
 	}

@@ -33,27 +33,29 @@ public class BaublesApi {
 	/**
 	 * Retrieves the baubles inventory capability handler for the supplied player
 	 */
-	public static IBaublesItemHandler getBaublesHandler(EntityPlayer player)
+	/*public static IBaublesItemHandler getBaublesHandler(EntityPlayer player)
 	{
-		IBaublesItemHandler handler = player.getCapability(BaublesCapabilities.CAPABILITY_BAUBLES, null);
-		handler.setPlayer(player);
-		return handler;
-	}
+		//IBaublesItemHandler handler = player.getCapability(BaublesCapabilityManager.CAPABILITY_BAUBLES, null);
+		//handler.setPlayer(player);
+		//return handler;
+		return null;
+	}*/
 
 	/**
 	 * @param livingEntity  The ItemStack to get the bauble inventory capability from
 	 * @return  Optional of the bauble inventory capability attached to the entity
 	 */
-	public static Optional<IBaublesItemHandler> getOBaublesHandler(@Nonnull final EntityLivingBase livingEntity) {
-		return Optional.ofNullable(livingEntity.getCapability(BaublesCapabilities.CAPABILITY_BAUBLES, null));
-	}
+	/*public static Optional<IBaublesItemHandler> getOBaublesHandler(@Nonnull final EntityLivingBase livingEntity) {
+		//return Optional.ofNullable(livingEntity.getCapability(BaublesCapabilityManager.CAPABILITY_BAUBLES, null));
+		return null;
+	}*/
 
 	/**
 	 * @param stack The ItemStack to get the bauble capability from
 	 * @return  Optional of the bauble capability attached to the ItemStack
 	 */
 	public static Optional<IBauble> getOBaubles(ItemStack stack) {
-		return Optional.ofNullable(stack.getCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null));
+		return Optional.ofNullable(stack.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null));
 	}
 
 	/**
@@ -61,9 +63,10 @@ public class BaublesApi {
 	 */
 	public static IInventory getBaubles(EntityPlayer player)
 	{
-		IBaublesItemHandler handler = player.getCapability(BaublesCapabilities.CAPABILITY_BAUBLES, null);
+		/*IBaublesItemHandler handler = player.getCapability(BaublesCapabilityManager.getBaublePlayerCap(), null);
 		handler.setPlayer(player);
-		return new BaublesInventoryWrapper(handler, player);
+		return new BaublesInventoryWrapper(handler, player);*/
+		return null;
 	}
 
 	/**
@@ -71,10 +74,10 @@ public class BaublesApi {
 	 * @return -1 if not found and slot number if it is found 
 	 */
 	public static int isBaubleEquipped(EntityPlayer player, Item bauble) {
-		IBaublesItemHandler handler = getBaublesHandler(player);
+		/*IBaublesItemHandler handler = getBaublesHandler(player);
 		for (int a=0;a<handler.getSlots();a++) {
 			if (!handler.getStackInSlot(a).isEmpty() && handler.getStackInSlot(a).getItem()==bauble) return a;
-		}
+		}*/
 		return -1;
 	}
 

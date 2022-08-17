@@ -2,7 +2,7 @@ package baubles.client;
 
 import baubles.api.BaubleType;
 import baubles.api.IBauble;
-import baubles.api.cap.BaublesCapabilities;
+import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.items.ItemRing;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketOpenBaublesInventory;
@@ -36,8 +36,8 @@ public class ClientEventHandler
 
 	@SubscribeEvent
 	public void tooltipEvent(ItemTooltipEvent event) {
-		if (!event.getItemStack().isEmpty() && event.getItemStack().hasCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null)) {
-			IBauble bauble = event.getItemStack().getCapability(BaublesCapabilities.CAPABILITY_ITEM_BAUBLE, null);
+		if (!event.getItemStack().isEmpty() && event.getItemStack().hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)) {
+			IBauble bauble = event.getItemStack().getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null);
 			BaubleType bt = bauble.getBaubleType(event.getItemStack());
 			event.getToolTip().add(TextFormatting.GOLD + I18n.format("name." + bt));
 		}
