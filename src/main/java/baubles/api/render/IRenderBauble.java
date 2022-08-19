@@ -2,10 +2,10 @@
  * This class was created by <Vazkii>. It's distributed as
  * part of the Botania Mod. Get the Source Code in github:
  * https://github.com/Vazkii/Botania
- *
+ * <p>
  * Botania is Open Source and distributed under the
  * Botania License: http://botaniamod.net/license.php
- *
+ * <p>
  * File Created @ [Aug 27, 2014, 8:55:00 PM (GMT)]
  */
 
@@ -32,6 +32,22 @@ public interface IRenderBauble {
 	 */
 	public void onPlayerBaubleRender(ItemStack stack, EntityPlayer player, RenderType type, float partialTicks);
 
+	public enum RenderType {
+		/**
+		 * Render Type for the player's body, translations apply on the player's rotation.
+		 * Sneaking is not handled and should be done during the render.
+		 * @see IRenderBauble.Helper
+		 */
+		BODY,
+
+		/**
+		 * Render Type for the player's body, translations apply on the player's head rotations.
+		 * Sneaking is not handled and should be done during the render.
+		 * @see IRenderBauble.Helper
+		 */
+		HEAD;
+	}
+
 	/**
 	 * A few helper methods for the render.
 	 */
@@ -42,7 +58,7 @@ public interface IRenderBauble {
 		 * Use for renders under {@link RenderType#BODY}.
 		 */
 		public static void rotateIfSneaking(EntityPlayer player) {
-			if(player.isSneaking())
+			if (player.isSneaking())
 				applySneakingRotation();
 		}
 
@@ -92,21 +108,5 @@ public interface IRenderBauble {
 			GlStateManager.rotate(180F, 1F, 0F, 0F);
 			GlStateManager.translate(0F, -3.2F, -0.85F);
 		}
-	}
-
-	public enum RenderType {
-		/**
-		 * Render Type for the player's body, translations apply on the player's rotation.
-		 * Sneaking is not handled and should be done during the render.
-		 * @see IRenderBauble.Helper
-		 */
-		BODY,
-
-		/**
-		 * Render Type for the player's body, translations apply on the player's head rotations.
-		 * Sneaking is not handled and should be done during the render.
-		 * @see IRenderBauble.Helper
-		 */
-		HEAD;
 	}
 }

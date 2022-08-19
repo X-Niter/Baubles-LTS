@@ -10,12 +10,11 @@ import java.io.File;
 public class Config {
 
 	public static Configuration config;
-	public static boolean renderBaubles=true;
+	public static boolean renderBaubles = true;
 
-	public static boolean useCurioGUI=true;
+	public static boolean useCurioGUI = true;
 
-	public static void initialize(File file)
-	{
+	public static void initialize(File file) {
 		config = new Configuration(file);
 		config.load();
 
@@ -30,19 +29,18 @@ public class Config {
 
 		String useCurioGUIDesc = "Set to false to disable the Curios GUI/Backport features(AKA disables the scrollable gui that allows wearing more then 7 trinkets)";
 		useCurioGUI = config.getBoolean("curiosGUI.enabled", Configuration.CATEGORY_CLIENT, useCurioGUI, useCurioGUIDesc);
-		
-		if(config.hasChanged())	config.save();
+
+		if (config.hasChanged()) config.save();
 	}
 
-	public static void save()
-	{
+	public static void save() {
 		config.save();
 	}
 
 	public static class ConfigChangeListener {
 		@SubscribeEvent
 		public static void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent eventArgs) {
-			if(eventArgs.getModID().equals(Baubles.MODID))
+			if (eventArgs.getModID().equals(Baubles.MODID))
 				load();
 		}
 	}

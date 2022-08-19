@@ -15,6 +15,7 @@ public interface IBaublePlayer {
 	 * @throws WrongSideException if called on client.
 	 */
 	void sendUpdates();
+
 	@Override
 	String toString();
 }

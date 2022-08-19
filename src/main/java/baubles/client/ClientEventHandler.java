@@ -18,8 +18,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 import net.minecraftforge.fml.relauncher.Side;
 
-public class ClientEventHandler
-{
+public class ClientEventHandler {
 	@SubscribeEvent
 	public void registerItemModels(ModelRegistryEvent event) {
 		ModelLoader.setCustomModelResourceLocation(ItemRing.RING, 0, new ModelResourceLocation("baubles:ring", "inventory"));
@@ -27,9 +26,9 @@ public class ClientEventHandler
 
 	@SubscribeEvent
 	public void playerTick(PlayerTickEvent event) {
-		if (event.side == Side.CLIENT && event.phase == Phase.START ) {
+		if (event.side == Side.CLIENT && event.phase == Phase.START) {
 			if (ClientProxy.KEY_BAUBLES.isPressed() && FMLClientHandler.instance().getClient().inGameHasFocus) {
-					PacketHandler.INSTANCE.sendToServer(new PacketOpenBaublesInventory());
+				PacketHandler.INSTANCE.sendToServer(new PacketOpenBaublesInventory());
 			}
 		}
 	}

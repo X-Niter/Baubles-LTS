@@ -57,11 +57,10 @@ public class CommandBaubles extends CommandBase {
 			sender.sendMessage(new TextComponentTranslation("\u00a73" + "help.message.three"));
 			sender.sendMessage(new TextComponentTranslation("\u00a73" + "help.message.four"));
 			sender.sendMessage(new TextComponentTranslation("\u00a73" + "help.message.five"));
-		}
-		else if (args.length >= 2) {
-			EntityPlayerMP entityplayermp = getPlayer(server,sender,args[1]);
-			
-			if (entityplayermp==null) {
+		} else if (args.length >= 2) {
+			EntityPlayerMP entityplayermp = getPlayer(server, sender, args[1]);
+
+			if (entityplayermp == null) {
 				sender.sendMessage(new TextComponentTranslation("\u00a7c" + args[1] + " message.not_found"));
 				return;
 			}
@@ -71,33 +70,35 @@ public class CommandBaubles extends CommandBase {
 
 			if (args[0].equalsIgnoreCase("view")) {
 				sender.sendMessage(new TextComponentTranslation("\u00a73" + "message.showing_baubles_for " + entityplayermp.getName()));
-				for (int a = 0; a<baubles.getActualSize();a++) {
+				for (int a = 0; a < baubles.getActualSize(); a++) {
 					ItemStack st = baubles.getStackInSlot(a);
 					if (!st.isEmpty() && st.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)) {
 						IBauble bauble = st.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null);
 						BaubleType bt = bauble.getBaubleType(st);
-						sender.sendMessage(new TextComponentTranslation("\u00a73 [message.slot "+a+"] "+bt+" "+st.getDisplayName()));
+						sender.sendMessage(new TextComponentTranslation("\u00a73 [message.slot " + a + "] " + bt + " " + st.getDisplayName()));
 					}
 				}
-			}
-			else if (args[0].equalsIgnoreCase("clear")) {
-				if (args.length>=3) {
+			} else if (args[0].equalsIgnoreCase("clear")) {
+				if (args.length >= 3) {
 					int slot = -1;
-					try { slot = Integer.parseInt(args[2]); } catch (Exception e) {}
-					if (slot<0 || slot >= baubles.getActualSize()) {
+					try {
+						slot = Integer.parseInt(args[2]);
+					} catch (Exception e) {
+					}
+					if (slot < 0 || slot >= baubles.getActualSize()) {
 						sender.sendMessage(new TextComponentTranslation("\u00a7c" + "message.invalid_arguments"));
 						sender.sendMessage(new TextComponentTranslation("\u00a7c" + "message.use_help_command"));
 					} else {
-						baubles.setStackInSlot(slot, ItemStack.EMPTY); 
-						sender.sendMessage(new TextComponentTranslation("\u00a73Cleared baubles slot "+slot+" for "+entityplayermp.getName()));
-						entityplayermp.sendMessage(new TextComponentTranslation("\u00a74Your baubles slot "+slot+" has been cleared by admin "+sender.getName()));
+						baubles.setStackInSlot(slot, ItemStack.EMPTY);
+						sender.sendMessage(new TextComponentTranslation("\u00a73Cleared baubles slot " + slot + " for " + entityplayermp.getName()));
+						entityplayermp.sendMessage(new TextComponentTranslation("\u00a74Your baubles slot " + slot + " has been cleared by admin " + sender.getName()));
 					}
 				} else {
-					for (int a = 0; a<baubles.getActualSize();a++) {
+					for (int a = 0; a < baubles.getActualSize(); a++) {
 						baubles.setStackInSlot(a, ItemStack.EMPTY);
 					}
-					sender.sendMessage(new TextComponentTranslation("\u00a73Cleared all baubles slots for "+entityplayermp.getName()));
-					entityplayermp.sendMessage(new TextComponentTranslation("\u00a74All your baubles slots have been cleared by admin "+sender.getName()));
+					sender.sendMessage(new TextComponentTranslation("\u00a73Cleared all baubles slots for " + entityplayermp.getName()));
+					entityplayermp.sendMessage(new TextComponentTranslation("\u00a74All your baubles slots have been cleared by admin " + sender.getName()));
 				}
 			} else {
 				sender.sendMessage(new TextComponentTranslation("\u00a7c" + "message.invalid_arguments"));

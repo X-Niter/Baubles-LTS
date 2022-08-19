@@ -15,9 +15,9 @@ import java.util.Objects;
 public class BaubleStorage extends SerializableInnerCap<NBTBase, BaubleStorage> implements IBaubleStorage {
 	// This has 1 open slot, used to render the items
 	private final BaubleStackHandler baubles = new BaubleStackHandler(this);
+	private final HashMap<Integer, Boolean> changed = new HashMap<>();
 	// This will always be full to the brim, used to copy into baubles
 	private BaubleStackHandler baublesold;
-	private final HashMap<Integer, Boolean> changed = new HashMap<>();
 
 	@Override
 	public void setStackInSlot(int slot, @Nonnull ItemStack stack) {
@@ -39,11 +39,11 @@ public class BaubleStorage extends SerializableInnerCap<NBTBase, BaubleStorage> 
 	public void addItem(@Nonnull ItemStack stack) {
 		// Deep copy the baubles list (it's kind of a workaround I guess)
 		baublesold = new BaubleStackHandler(this, baubles);
-		baubles.setSize(baubles.getSlots()+1);
+		baubles.setSize(baubles.getSlots() + 1);
 		// Add old items
 		for (int i = 0; i < baublesold.getSlots(); ++i)
 			baubles.setStackInSlot(i, baublesold.getStackInSlot(i).copy());
-		baubles.setStackInSlot(baubles.getSlots()-2, stack.copy()); // Add new item
+		baubles.setStackInSlot(baubles.getSlots() - 2, stack.copy()); // Add new item
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class BaubleStorage extends SerializableInnerCap<NBTBase, BaubleStorage> 
 		changed.remove(baubles.getSlots());
 		// Deep copy the baubles list (it's kind of a workaround I guess)
 		baublesold = new BaubleStackHandler(this, baubles);
-		baubles.setSize(baubles.getSlots()-1);
+		baubles.setSize(baubles.getSlots() - 1);
 		// Add old items, except slot we are removing
 		for (int i = 0; i < baublesold.getSlots(); ++i) {
 			if (i == slot) continue;
@@ -80,8 +80,8 @@ public class BaubleStorage extends SerializableInnerCap<NBTBase, BaubleStorage> 
 		baublesold = new BaubleStackHandler(this, baubles);
 		baubles.setSize(size);
 		// Add old items
-		for (int i = 0, j = 0; i < baubles.getSlots(); ++i, ++j) {
-			while (j < baublesold.getSlots()-1 && baublesold.getStackInSlot(j).isEmpty()) ++j;
+		for (int i = 0, j = 0; i < baubles.getSlots() && j < baublesold.getSlots(); ++i, ++j) {
+			while (j < baublesold.getSlots() - 1 && baublesold.getStackInSlot(j).isEmpty()) ++j;
 			baubles.setStackInSlot(i, baublesold.getStackInSlot(j).copy());
 		}
 	}
@@ -101,7 +101,7 @@ public class BaubleStorage extends SerializableInnerCap<NBTBase, BaubleStorage> 
 	public void addEmptySlot() {
 		// Deep copy the baubles list (it's kind of a workaround I guess)
 		baublesold = new BaubleStackHandler(this, baubles);
-		baubles.setSize(baubles.getSlots()+1);
+		baubles.setSize(baubles.getSlots() + 1);
 		// Add old items
 		for (int i = 0; i < baublesold.getSlots(); ++i)
 			baubles.setStackInSlot(i, baublesold.getStackInSlot(i).copy());
@@ -109,7 +109,7 @@ public class BaubleStorage extends SerializableInnerCap<NBTBase, BaubleStorage> 
 
 	@Override
 	public int getSize() {
-		return baubles.getSlots()-1;
+		return baubles.getSlots() - 1;
 	}
 
 	@Override

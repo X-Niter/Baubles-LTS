@@ -2,7 +2,6 @@ package baubles.common.container;
 
 import baubles.api.IBauble;
 import baubles.api.cap.BaubleStackHandler;
-import baubles.api.cap.BaubleStorage;
 import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.event.BaubleEquipmentChangeEvent;
 import net.minecraft.entity.player.EntityPlayer;

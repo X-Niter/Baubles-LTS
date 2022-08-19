@@ -2,10 +2,10 @@
  * This class was created by <Vazkii>. It's distributed as
  * part of the Botania Mod. Get the Source Code in github:
  * https://github.com/Vazkii/Botania
- *
+ * <p>
  * Botania is Open Source and distributed under the
  * Botania License: http://botaniamod.net/license.php
- *
+ * <p>
  * File Created @ [Aug 27, 2014, 8:55:00 PM (GMT)]
  */
 package baubles.client;
@@ -30,7 +30,7 @@ public final class BaublesRenderLayer implements LayerRenderer<EntityPlayer> {
 	@Override
 	public void doRenderLayer(@Nonnull EntityPlayer player, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		// TODO: fix rendering?
-		if(!Config.renderBaubles || player.getActivePotionEffect(MobEffects.INVISIBILITY) != null)
+		if (!Config.renderBaubles || player.getActivePotionEffect(MobEffects.INVISIBILITY) != null)
 			return;
 
 		IBaubleStorage inv = BaublesCapabilityManager.asBaublesPlayer(player).getBaubleStorage();
@@ -50,13 +50,13 @@ public final class BaublesRenderLayer implements LayerRenderer<EntityPlayer> {
 	}
 
 	private void dispatchRenders(IBaubleStorage inv, EntityPlayer player, RenderType type, float partialTicks) {
-		for(int i = 0; i < inv.getActualSize(); i++) {
+		for (int i = 0; i < inv.getActualSize(); i++) {
 			ItemStack stack = inv.getStackInSlot(i);
-			if(stack != null && !stack.isEmpty()) {
+			if (stack != null && !stack.isEmpty()) {
 				Item item = stack.getItem();
-				if(item instanceof IRenderBauble) {
+				if (item instanceof IRenderBauble) {
 					GlStateManager.pushMatrix();
-					GL11.glColor3ub((byte) 255, (byte) 255, (byte) 255); 
+					GL11.glColor3ub((byte) 255, (byte) 255, (byte) 255);
 					GlStateManager.color(1F, 1F, 1F, 1F);
 					((IRenderBauble) stack.getItem()).onPlayerBaubleRender(stack, player, type, partialTicks);
 					GlStateManager.popMatrix();

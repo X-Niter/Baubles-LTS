@@ -26,15 +26,13 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import javax.annotation.Nonnull;
 
 @Mod.EventBusSubscriber
-public class ItemRing extends Item implements IBauble
-{
+public class ItemRing extends Item implements IBauble {
 	@GameRegistry.ObjectHolder(Baubles.MODID + ":ring")
 	public static final Item RING = new ItemRing();
 
 	private String translationKey;
 
-	public ItemRing()
-	{
+	public ItemRing() {
 		super();
 		this.setMaxStackSize(1);
 		this.setHasSubtypes(true);
@@ -63,7 +61,7 @@ public class ItemRing extends Item implements IBauble
 
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand) {
-		if(!world.isRemote) {
+		if (!world.isRemote) {
 			BaubleStorage baubles = BaublesCapabilityManager.asBaublesPlayer(player).getBaubleStorage();
 			for (int i = 0; i < baubles.getActualSize(); i++)
 				if ((baubles.getStackInSlot(i) == null || baubles.getStackInSlot(i).isEmpty()) && baubles.isItemValidForSlot(i, player.getHeldItem(hand), player)) {
@@ -81,7 +79,7 @@ public class ItemRing extends Item implements IBauble
 	@Override
 	public void onWornTick(ItemStack itemstack, EntityLivingBase player) {
 		if (itemstack.getItemDamage() == 0 && player.ticksExisted % 39 == 0) {
-			player.addPotionEffect(new PotionEffect(MobEffects.HASTE,40,0,true,true));
+			player.addPotionEffect(new PotionEffect(MobEffects.HASTE, 40, 0, true, true));
 		}
 	}
 

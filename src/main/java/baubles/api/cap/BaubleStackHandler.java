@@ -1,19 +1,18 @@
 package baubles.api.cap;
 
-import baubles.common.Baubles;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
 
-import java.util.Collections;
-
 /* Custom class so we can clone */
 public class BaubleStackHandler extends ItemStackHandler {
 	private final BaubleStorage storage;
+
 	public BaubleStackHandler(BaubleStorage s) {
 		super(1);
 		storage = s;
 	}
+
 	public BaubleStackHandler(BaubleStorage s, BaubleStackHandler toClone) {
 		super(toClone.stacks);
 		storage = s;
@@ -36,6 +35,6 @@ public class BaubleStackHandler extends ItemStackHandler {
 		for (ItemStack stack : stacks) {
 			if (stack.isEmpty()) ++toRemove;
 		}
-		storage.setSizeWithoutEmpty(getSlots()-toRemove);
+		storage.setSizeWithoutEmpty(getSlots() - toRemove);
 	}
 }

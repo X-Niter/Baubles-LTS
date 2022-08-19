@@ -1,7 +1,5 @@
 package baubles.client.gui;
 
-import baubles.api.BaublesApi;
-import baubles.api.cap.BaubleStorage;
 import baubles.api.cap.BaublesCapabilityManager;
 import baubles.client.ClientProxy;
 import baubles.common.Baubles;
@@ -10,13 +8,10 @@ import baubles.common.container.ContainerPlayerExpanded;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.client.gui.inventory.GuiInventory;
-import net.minecraft.client.gui.recipebook.GuiRecipeBook;
-import net.minecraft.client.gui.recipebook.IRecipeShownListener;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.InventoryEffectRenderer;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.Slot;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.relauncher.Side;
@@ -27,16 +22,20 @@ import java.io.IOException;
 @SideOnly(Side.CLIENT)
 public class GuiPlayerExpanded extends InventoryEffectRenderer {
 
-	public static final ResourceLocation background = new ResourceLocation(Baubles.MODID,"textures/gui/expanded_inventory.png");
+	public static final ResourceLocation background = new ResourceLocation(Baubles.MODID, "textures/gui/expanded_inventory.png");
 
 	static final ResourceLocation CURIO_INVENTORY = new ResourceLocation(Baubles.MODID, "textures/gui/inventory.png");
 
 	private static final ResourceLocation CREATIVE_INVENTORY_TABS = new ResourceLocation("textures/gui/container/creative_inventory/tabs.png");
 
-	/** The old x position of the mouse pointer */
+	/**
+	 * The old x position of the mouse pointer
+	 */
 	private float oldMouseX;
 
-	/** The old y position of the mouse pointer */
+	/**
+	 * The old y position of the mouse pointer
+	 */
 	private float oldMouseY;
 
 	private boolean widthTooNarrow;
@@ -47,14 +46,12 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 
 	private boolean buttonClicked;
 
-	public GuiPlayerExpanded(EntityPlayer player)
-	{
+	public GuiPlayerExpanded(EntityPlayer player) {
 		super(new ContainerPlayerExpanded(player.inventory, !player.getEntityWorld().isRemote, player));
 		this.allowUserInput = true;
 	}
 
-	private void resetGuiLeft()
-	{
+	private void resetGuiLeft() {
 		this.guiLeft = (this.width - this.xSize) / 2;
 	}
 
@@ -62,8 +59,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 	 * Adds the buttons (and other controls) to the screen in question.
 	 */
 	@Override
-	public void initGui()
-	{
+	public void initGui() {
 		super.initGui();
 		this.buttonList.clear();
 		resetGuiLeft();
@@ -72,6 +68,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 			this.guiLeft = (this.width - this.xSize) / 2;
 		}
 	}
+
 	private boolean inScrollBar(double mouseX, double mouseY) {
 		int i = this.guiLeft;
 		int j = this.guiTop;
@@ -79,7 +76,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 		int l = j + 12;
 		int i1 = k + 14;
 		int j1 = l + 139;
-		return mouseX >= (double)k && mouseY >= (double)l && mouseX < (double)i1 && mouseY < (double)j1;
+		return mouseX >= (double) k && mouseY >= (double) l && mouseX < (double) i1 && mouseY < (double) j1;
 	}
 
 
@@ -104,8 +101,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 	 * Draws the screen and all the components in it.
 	 */
 	@Override
-	public void drawScreen(int mouseX, int mouseY, float partialTicks)
-	{
+	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
 		this.drawDefaultBackground();
 		this.oldMouseX = (float) mouseX;
 		this.oldMouseY = (float) mouseY;
@@ -148,7 +144,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 			});*/
 		//}
 
-		int slotCount =  BaublesCapabilityManager.asBaublesPlayer(mc.player).getBaubleStorage().getActualSize();
+		int slotCount = BaublesCapabilityManager.asBaublesPlayer(mc.player).getBaubleStorage().getActualSize();
 		int upperHeight = 7 + slotCount * 18;
 		this.mc.getTextureManager().bindTexture(CURIO_INVENTORY);
 		this.drawTexturedModalRect(k - 26, l + 4, 0, 0, 27, upperHeight);
@@ -158,7 +154,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 		} else {
 			this.drawTexturedModalRect(k - 42, l + 4, 27, 0, 23, 158);
 			this.mc.getTextureManager().bindTexture(CREATIVE_INVENTORY_TABS);
-			this.drawTexturedModalRect(k - 34, l + 12 + (int)(127f * this.currentScroll), 232, 0, 12, 15);
+			this.drawTexturedModalRect(k - 34, l + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
 		}
 
 		GuiInventory.drawEntityOnScreen(k + 51, l + 75, 30, (float) (k + 51) - this.oldMouseX, (float) (l + 75 - 50) - this.oldMouseY, this.mc.player);
@@ -166,18 +162,15 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 	}
 
 	@Override
-	protected void actionPerformed(GuiButton button)
-	{
-		if (button.id == 1)
-		{
+	protected void actionPerformed(GuiButton button) {
+		if (button.id == 1) {
 			this.mc.displayGuiScreen(new GuiStats(this, this.mc.player.getStatFileWriter()));
 		}
 	}
 
 	@Override
 	protected void keyTyped(char par1, int par2) throws IOException {
-		if (par2 == ClientProxy.KEY_BAUBLES.getKeyCode())
-		{
+		if (par2 == ClientProxy.KEY_BAUBLES.getKeyCode()) {
 			this.mc.player.closeScreen();
 		} else
 			super.keyTyped(par1, par2);
@@ -193,11 +186,10 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
 	}
 
 	private boolean needsScrollBars() {
-		return ((ContainerPlayerExpanded)this.inventorySlots).canScroll();
+		return ((ContainerPlayerExpanded) this.inventorySlots).canScroll();
 	}
 
-	public void displayNormalInventory()
-	{
+	public void displayNormalInventory() {
 		GuiInventory gui = new GuiInventory(this.mc.player);
 		ObfuscationReflectionHelper.setPrivateValue(GuiInventory.class, gui, this.oldMouseX, "field_147048_u");
 		ObfuscationReflectionHelper.setPrivateValue(GuiInventory.class, gui, this.oldMouseY, "field_147047_v");

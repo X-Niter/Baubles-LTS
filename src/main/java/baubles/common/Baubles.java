@@ -1,7 +1,7 @@
 package baubles.common;
 
 import baubles.api.BaubleType;
-import baubles.api.cap.*;
+import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.event.CommandBaubles;
 import baubles.common.network.PacketHandler;
 import net.minecraftforge.fml.common.Mod;
@@ -19,9 +19,9 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 
 @Mod(
-		modid = Baubles.MODID, 
-		name = Baubles.MODNAME, 
-		version = Baubles.VERSION, 
+		modid = Baubles.MODID,
+		name = Baubles.MODNAME,
+		version = Baubles.VERSION,
 		guiFactory = "baubles.client.gui.BaublesGuiFactory",
 		dependencies = "required-after:forge@[14.23.5.2860,);")
 public class Baubles {
@@ -29,17 +29,17 @@ public class Baubles {
 	public static final String MODID = "baubles";
 	public static final String MODNAME = "Baubles";
 	public static final String VERSION = "1.12.2-1.0.6.1";
-
-	@SidedProxy(clientSide = "baubles.client.ClientProxy", serverSide = "baubles.common.CommonProxy")
-	public static CommonProxy proxy;
-
-	@Instance(value=Baubles.MODID)
-	public static Baubles instance;
-
-	public File modDir;
-
 	public static final Logger log = LogManager.getLogger(MODID.toUpperCase());
 	public static final int GUI = 0;
+	@SidedProxy(clientSide = "baubles.client.ClientProxy", serverSide = "baubles.common.CommonProxy")
+	public static CommonProxy proxy;
+	@Instance(value = Baubles.MODID)
+	public static Baubles instance;
+	public File modDir;
+
+	private static void send(String id, Object msg) {
+		FMLInterModComms.sendMessage(MODID, id, msg.toString());
+	}
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
@@ -83,16 +83,11 @@ public class Baubles {
 	}
 
 	@EventHandler
-	public void serverLoad(FMLServerStartingEvent event)
-	{
+	public void serverLoad(FMLServerStartingEvent event) {
 		event.registerServerCommand(new CommandBaubles());
 	}
 
 	private void process(FMLInterModComms.IMCEvent evt) {
 		BaubleType.processBaubleTypes(evt.getMessages().stream(), evt.getMessages().stream());
-	}
-
-	private static void send(String id, Object msg) {
-		FMLInterModComms.sendMessage(MODID, id, msg.toString());
 	}
 }

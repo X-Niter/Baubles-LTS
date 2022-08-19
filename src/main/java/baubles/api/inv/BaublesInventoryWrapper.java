@@ -7,8 +7,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 
-import java.util.SortedMap;
-
 public class BaublesInventoryWrapper implements IInventory {
 	final IBaubleStorage handler;
 	final EntityPlayer player;
@@ -78,7 +76,8 @@ public class BaublesInventoryWrapper implements IInventory {
 	}
 
 	@Override
-	public void markDirty() { }
+	public void markDirty() {
+	}
 
 	@Override
 	public boolean isUsableByPlayer(EntityPlayer player) {
@@ -86,10 +85,12 @@ public class BaublesInventoryWrapper implements IInventory {
 	}
 
 	@Override
-	public void openInventory(EntityPlayer player) { }
+	public void openInventory(EntityPlayer player) {
+	}
 
 	@Override
-	public void closeInventory(EntityPlayer player) { }
+	public void closeInventory(EntityPlayer player) {
+	}
 
 	@Override
 	public boolean isItemValidForSlot(int index, ItemStack stack) {
@@ -102,7 +103,8 @@ public class BaublesInventoryWrapper implements IInventory {
 	}
 
 	@Override
-	public void setField(int id, int value) {}
+	public void setField(int id, int value) {
+	}
 
 	@Override
 	public int getFieldCount() {
@@ -111,8 +113,7 @@ public class BaublesInventoryWrapper implements IInventory {
 
 	@Override
 	public void clear() {
-		for (int i = 0; i < this.getSizeInventory(); ++i)
-		{
+		for (int i = 0; i < this.getSizeInventory(); ++i) {
 			this.setInventorySlotContents(i, ItemStack.EMPTY);
 		}
 	}

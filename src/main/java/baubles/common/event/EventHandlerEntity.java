@@ -2,25 +2,18 @@ package baubles.common.event;
 
 import baubles.api.BaublesApi;
 import baubles.api.IBauble;
-import baubles.api.cap.*;
-import baubles.common.Baubles;
+import baubles.api.cap.BaubleStorage;
+import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketSync;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.PlayerDropsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -28,7 +21,6 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.items.ItemStackHandler;
 
 import java.util.*;
 

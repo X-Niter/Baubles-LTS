@@ -1,28 +1,21 @@
 package baubles.api;
 
-import baubles.api.cap.*;
-import baubles.api.inv.BaublesInventoryWrapper;
-import baubles.common.Baubles;
+import baubles.api.cap.BaublesCapabilityManager;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import io.netty.util.internal.ConcurrentSet;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.common.event.FMLInterModComms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * @author Azanor
@@ -43,16 +36,18 @@ public class BaublesApi {
 
 	/**
 	 * @param livingEntity  The ItemStack to get the bauble inventory capability from
-	 * @return  Optional of the bauble inventory capability attached to the entity
+	 * @return Optional of the bauble inventory capability attached to the entity
 	 */
 	/*public static Optional<IBaublesItemHandler> getOBaublesHandler(@Nonnull final EntityLivingBase livingEntity) {
 		//return Optional.ofNullable(livingEntity.getCapability(BaublesCapabilityManager.CAPABILITY_BAUBLES, null));
 		return null;
 	}*/
 
+	private static Map<Item, Set<String>> itemToTypes = new HashMap<>();
+
 	/**
 	 * @param stack The ItemStack to get the bauble capability from
-	 * @return  Optional of the bauble capability attached to the ItemStack
+	 * @return Optional of the bauble capability attached to the ItemStack
 	 */
 	public static Optional<IBauble> getOBaubles(ItemStack stack) {
 		return Optional.ofNullable(stack.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null));
@@ -61,8 +56,7 @@ public class BaublesApi {
 	/**
 	 * Retrieves the baubles capability handler wrapped as a IInventory for the supplied player
 	 */
-	public static IInventory getBaubles(EntityPlayer player)
-	{
+	public static IInventory getBaubles(EntityPlayer player) {
 		/*IBaublesItemHandler handler = player.getCapability(BaublesCapabilityManager.getBaublePlayerCap(), null);
 		handler.setPlayer(player);
 		return new BaublesInventoryWrapper(handler, player);*/
@@ -71,7 +65,8 @@ public class BaublesApi {
 
 	/**
 	 * Returns if the passed in item is equipped in a bauble slot. Will return the first slot found
-	 * @return -1 if not found and slot number if it is found 
+	 *
+	 * @return -1 if not found and slot number if it is found
 	 */
 	public static int isBaubleEquipped(EntityPlayer player, Item bauble) {
 		/*IBaublesItemHandler handler = getBaublesHandler(player);
@@ -83,15 +78,16 @@ public class BaublesApi {
 
 	/**
 	 * Registers a resource location to be used as the slot overlay icon in the GUI
-	 * @param id                The identifier of the type of bauble to be associated with the icon
-	 * @param resourceLocation  The resource location of the icon
+	 *
+	 * @param id               The identifier of the type of bauble to be associated with the icon
+	 * @param resourceLocation The resource location of the icon
 	 */
 	public static void registerIcon(String id, @Nonnull ResourceLocation resourceLocation) {
 		BaubleType.iconQueues.computeIfAbsent(id, k -> new ConcurrentSet<>()).add(resourceLocation);
 	}
 
 	/**
-	 * @return  A map of identifiers and their registered icons
+	 * @return A map of identifiers and their registered icons
 	 */
 	public static Map<String, ResourceLocation> getIcons() {
 		return ImmutableMap.copyOf(BaubleType.icons);
@@ -99,7 +95,7 @@ public class BaublesApi {
 
 	/**
 	 * @param identifier The unique identifier for the {@link BaubleType}
-	 * @return  The {@link BaubleType} from the given identifier
+	 * @return The {@link BaubleType} from the given identifier
 	 */
 	@Nullable
 	public static BaubleType getType(String identifier) {
@@ -107,7 +103,7 @@ public class BaublesApi {
 	}
 
 	/**
-	 * @return  An unmodifiable list of all unique registered identifiers
+	 * @return An unmodifiable list of all unique registered identifiers
 	 */
 	public static ImmutableSet<String> getTypeIdentifiers() {
 		return ImmutableSet.copyOf(BaubleType.idToType.keySet());
@@ -121,8 +117,6 @@ public class BaublesApi {
 		public static final String REGISTER_TYPE = "register_type";
 		public static final String MODIFY_TYPE = "modify_type";
 	}
-
-	private static Map<Item, Set<String>> itemToTypes = new HashMap<>();
 
 	public final static class FinderData {
 

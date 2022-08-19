@@ -6,16 +6,15 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.SoundCategory;
 
 /**
- * 
  * This interface should be extended by items that can be worn in bauble slots
- * 
+ *
  * @author Azanor
  */
 
 public interface IBauble {
 
 	/**
-	 * This method return the type of bauble this is. 
+	 * This method return the type of bauble this is.
 	 * Type is used to determine the slots it can go into.
 	 */
 	BaubleType getBaubleType(ItemStack itemstack);
@@ -23,17 +22,20 @@ public interface IBauble {
 	/**
 	 * This method is called once per tick if the bauble is being worn by a player
 	 */
-	default void onWornTick(ItemStack itemstack, EntityLivingBase player) {}
+	default void onWornTick(ItemStack itemstack, EntityLivingBase player) {
+	}
 
 	/**
 	 * This method is called when the bauble is equipped by a player
 	 */
-	default void onEquipped(ItemStack itemstack, EntityLivingBase player) {}
+	default void onEquipped(ItemStack itemstack, EntityLivingBase player) {
+	}
 
 	/**
 	 * This method is called when the bauble is unequipped by a player
 	 */
-	default void onUnequipped(ItemStack itemstack, EntityLivingBase player) {}
+	default void onUnequipped(ItemStack itemstack, EntityLivingBase player) {
+	}
 
 	/**
 	 * Can this bauble be added to a bauble slot
@@ -61,7 +63,8 @@ public interface IBauble {
 	/**
 	 * Plays a sound server-side when a bauble is equipped from right-clicking the ItemStack in hand
 	 * This can be overriden to play nothing, but it is advised to always play something as an auditory feedback for players
-	 * @param livingEntity  The wearer of the ItemStack
+	 *
+	 * @param livingEntity The wearer of the ItemStack
 	 */
 	default void playEquipSound(EntityLivingBase livingEntity) {
 		livingEntity.world.playSound(null, livingEntity.getPosition(), SoundEvents.ITEM_ARMOR_EQUIP_GENERIC,
@@ -70,7 +73,8 @@ public interface IBauble {
 
 	/**
 	 * Determines if the Baubles or the ItemStack can be automatically equipped into the first available slot when right-clicked
-	 * @return  True to enable right-clicking auto-equip, false to disable
+	 *
+	 * @return True to enable right-clicking auto-equip, false to disable
 	 */
 	default boolean canRightClickEquip() {
 		return true;

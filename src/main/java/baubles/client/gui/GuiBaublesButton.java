@@ -11,7 +11,6 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.client.config.ConfigGuiType;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import org.lwjgl.opengl.GL11;
 
@@ -32,8 +31,8 @@ public class GuiBaublesButton extends GuiButton {
 				if (!Config.useCurioGUI) {
 					PacketHandler.INSTANCE.sendToServer(new PacketOpenBaublesInventory());
 				} else {
-					float oldMouseX = ObfuscationReflectionHelper.getPrivateValue(GuiInventory.class, (GuiInventory)parentGui, "field_147048_u");
-					float oldMouseY = ObfuscationReflectionHelper.getPrivateValue(GuiInventory.class, (GuiInventory)parentGui, "field_147047_v");
+					float oldMouseX = ObfuscationReflectionHelper.getPrivateValue(GuiInventory.class, (GuiInventory) parentGui, "field_147048_u");
+					float oldMouseY = ObfuscationReflectionHelper.getPrivateValue(GuiInventory.class, (GuiInventory) parentGui, "field_147047_v");
 					PacketHandler.INSTANCE.sendToServer(new PacketOpenBaublesInventory(oldMouseX, oldMouseY));
 				}
 			} else {
@@ -45,10 +44,8 @@ public class GuiBaublesButton extends GuiButton {
 	}
 
 	@Override
-	public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks)
-	{
-		if (this.visible)
-		{
+	public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks) {
+		if (this.visible) {
 			int x = this.x + this.parentGui.getGuiLeft();
 
 			FontRenderer fontrenderer = mc.fontRenderer;
@@ -66,7 +63,7 @@ public class GuiBaublesButton extends GuiButton {
 
 			GlStateManager.pushMatrix();
 			GlStateManager.translate(0, 0, 200);
-			if (k==1) {
+			if (k == 1) {
 				if (!Config.useCurioGUI) {
 					this.drawTexturedModalRect(x, this.y, 200, 48, 10, 10);
 				} else {

@@ -1,4 +1,3 @@
-
 package baubles.common;
 
 import baubles.common.container.ContainerPlayerExpanded;
@@ -33,5 +32,6 @@ public class CommonProxy implements IGuiHandler {
 		MinecraftForge.EVENT_BUS.register(new EventHandlerItem());
 	}
 
-	public void init() { }
+	public void init() {
+	}
 }

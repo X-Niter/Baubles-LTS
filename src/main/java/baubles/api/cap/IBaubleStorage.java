@@ -7,7 +7,9 @@ import javax.annotation.Nonnull;
 
 public interface IBaubleStorage {
 	void setStackInSlot(int slot, @Nonnull ItemStack stack);
+
 	ItemStack getStackInSlot(int slot);
+
 	void addItem(ItemStack stack);
 
 	void removeItemFromSlot(int slot);
@@ -25,6 +27,7 @@ public interface IBaubleStorage {
 	void addEmptySlot();
 
 	int getSize();
+
 	int getActualSize();
 
 	boolean isItemValidForSlot(int slot, ItemStack stack, EntityLivingBase player);

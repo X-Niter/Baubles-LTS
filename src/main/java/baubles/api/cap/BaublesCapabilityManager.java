@@ -23,12 +23,11 @@ import javax.annotation.Nonnull;
 
 @Mod.EventBusSubscriber
 public class BaublesCapabilityManager {
-	public static final ResourceLocation BAUBLE_PLAYER_CAP = new ResourceLocation(Baubles.MODID,"baubles_player");
-
-	@CapabilityInject(IBaublePlayer.class)
-	private static final Capability<IBaublePlayer> BAUBLE_PLAYER = null;
+	public static final ResourceLocation BAUBLE_PLAYER_CAP = new ResourceLocation(Baubles.MODID, "baubles_player");
 	@CapabilityInject(IBauble.class)
 	public static final Capability<IBauble> CAPABILITY_ITEM_BAUBLE = null;
+	@CapabilityInject(IBaublePlayer.class)
+	private static final Capability<IBaublePlayer> BAUBLE_PLAYER = null;
 
 	public static IBaublePlayer asBaublesPlayer(EntityPlayer player) {
 		return player.getCapability(getBaublePlayerCap(), null);
@@ -71,12 +70,12 @@ public class BaublesCapabilityManager {
 	public static class CapabilityItemBaubleStorage implements Capability.IStorage<IBauble> {
 
 		@Override
-		public NBTBase writeNBT (Capability<IBauble> capability, IBauble instance, EnumFacing side) {
+		public NBTBase writeNBT(Capability<IBauble> capability, IBauble instance, EnumFacing side) {
 			return new NBTTagCompound();
 		}
 
 		@Override
-		public void readNBT (Capability<IBauble> capability, IBauble instance, EnumFacing side, NBTBase nbt) {
+		public void readNBT(Capability<IBauble> capability, IBauble instance, EnumFacing side, NBTBase nbt) {
 
 		}
 	}

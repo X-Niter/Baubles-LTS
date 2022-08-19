@@ -21,36 +21,27 @@ import java.io.IOException;
 public class PacketSync implements IMessage {
 
 	int playerId;
-
-	private int entityId;
-
-	private int slotId;
-
-	private ItemStack stack;
-	byte slot=0;
+	byte slot = 0;
 	ItemStack bauble;
-
+	private int entityId;
+	private int slotId;
+	private ItemStack stack;
 	private String baubleId;
 
-	public PacketSync() {}
+	public PacketSync() {
+	}
 
 	public PacketSync(EntityLivingBase p, int slot, ItemStack bauble) {
 		this.slot = (byte) slot;
 		this.bauble = bauble;
 		this.playerId = p.getEntityId();
 	}
+
 	public PacketSync(int entityId, String baubleId, int slotId, ItemStack stack) {
 		this.entityId = entityId;
 		this.slotId = slotId;
 		this.stack = stack.copy();
 		this.baubleId = baubleId;
-	}
-
-	@Override
-	public void toBytes(ByteBuf buffer) {
-		buffer.writeInt(playerId);
-		buffer.writeByte(slot);
-		ByteBufUtils.writeItemStack(buffer, bauble);
 	}
 
 	public static void encode(PacketSync msg, PacketBuffer buf) {
@@ -67,30 +58,38 @@ public class PacketSync implements IMessage {
 	}
 
 	@Override
+	public void toBytes(ByteBuf buffer) {
+		buffer.writeInt(playerId);
+		buffer.writeByte(slot);
+		ByteBufUtils.writeItemStack(buffer, bauble);
+	}
+
+	@Override
 	public void fromBytes(ByteBuf buffer) {
 		playerId = buffer.readInt();
 		slot = buffer.readByte();
 		bauble = ByteBufUtils.readItemStack(buffer);
 	}
 
-	public static class Handler implements IMessageHandler<PacketSync, IMessage>
-	{
+	public static class Handler implements IMessageHandler<PacketSync, IMessage> {
 		@Override
 		public IMessage onMessage(PacketSync message, MessageContext ctx) {
-			Minecraft.getMinecraft().addScheduledTask(new Runnable(){ public void run() {
-				World world = Baubles.proxy.getClientWorld();
-				if (world == null) {
-					return;
-				}
-				Entity p = world.getEntityByID(message.playerId);
-				if (p instanceof EntityPlayer) {
-					BaublesCapabilityManager.asBaublesPlayer((EntityPlayer) p).getBaubleStorage().setStackInSlot(message.slot, message.bauble);
-				}
+			Minecraft.getMinecraft().addScheduledTask(new Runnable() {
+				public void run() {
+					World world = Baubles.proxy.getClientWorld();
+					if (world == null) {
+						return;
+					}
+					Entity p = world.getEntityByID(message.playerId);
+					if (p instanceof EntityPlayer) {
+						BaublesCapabilityManager.asBaublesPlayer((EntityPlayer) p).getBaubleStorage().setStackInSlot(message.slot, message.bauble);
+					}
 				/*else if (p instanceof EntityLivingBase) {
 					// TODO: might not work cuz old code
 					//BaublesApi.getOBaublesHandler((EntityLivingBase) p).ifPresent(handler -> handler.setStackInSlot(message.baubleId, message.slotId, message.stack));
 				}*/
-			}});
+				}
+			});
 			return null;
 		}
 	}

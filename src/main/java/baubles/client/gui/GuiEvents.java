@@ -1,6 +1,5 @@
 package baubles.client.gui;
 
-import baubles.common.Config;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.resources.I18n;

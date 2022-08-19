@@ -15,21 +15,20 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class EventHandlerItem
-{
+public class EventHandlerItem {
 	private static ResourceLocation capabilityResourceLocation = new ResourceLocation(Baubles.MODID, "bauble_cap");
 
 	/**
-	* Handles backwards compatibility with items that implement IBauble instead of exposing it as a capability.
-	* This adds a IBauble capability wrapper for all items, if the item:
-	* - does implement the IBauble interface
-	* - does not already have the capability
-	* - did not get the capability by another event handler earlier in the chain
-	* @param event
-	*/
+	 * Handles backwards compatibility with items that implement IBauble instead of exposing it as a capability.
+	 * This adds a IBauble capability wrapper for all items, if the item:
+	 * - does implement the IBauble interface
+	 * - does not already have the capability
+	 * - did not get the capability by another event handler earlier in the chain
+	 *
+	 * @param event
+	 */
 	@SubscribeEvent(priority = EventPriority.LOWEST)
- 	public void itemCapabilityAttach(AttachCapabilitiesEvent<ItemStack> event)
- 	{
+	public void itemCapabilityAttach(AttachCapabilitiesEvent<ItemStack> event) {
 		ItemStack stack = event.getObject();
 		if (stack.isEmpty() || !(stack.getItem() instanceof IBauble) || stack.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)
 				|| event.getCapabilities().values().stream().anyMatch(c -> c.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)))
