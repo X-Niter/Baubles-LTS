@@ -1,0 +1,11 @@
+# Baubles Language File - English
+# Item names
+
+# Container
+container.baubles=Baubles
+baubles.slot.amulet=Amulet
+baubles.slot.ring=Ring
+baubles.slot.belt=Belt
+baubles.slot.head=Head
+baubles.slot.body=Body
+baubles.slot.charm=Charm

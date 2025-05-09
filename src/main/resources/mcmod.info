@@ -1,0 +1,16 @@
+[
+{
+  "modid": "baubles",
+  "name": "Baubles",
+  "description": "An API for player-worn accessories and trinkets.",
+  "version": "1.5.2",
+  "mcversion": "1.12.2",
+  "url": "https://github.com/X-Niter/Baubles-LTS",
+  "updateUrl": "",
+  "authorList": ["Azanor13"],
+  "credits": "Azanor13 for the original Baubles mod",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
