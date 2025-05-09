@@ -126,18 +126,42 @@ def analyze_with_openai(issue_data, comments_data, repo_files):
         If Yes, also provide FILES_TO_MODIFY=[comma-separated list of file paths] and FIX_TYPE=[simple|complex].
         """
         
-        # Call OpenAI API
-        completion = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development, particularly for the Baubles API. You analyze GitHub issues to determine if they can be automatically fixed."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1500
-        )
-        
-        # Extract response
-        analysis = completion.choices[0].message.content
+        # Call OpenAI API with error handling for different client versions
+        try:
+            # Try the newer client-based API format first
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=openai.api_key)
+                completion = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development, particularly for the Baubles API. You analyze GitHub issues to determine if they can be automatically fixed."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=1500
+                )
+                analysis = completion.choices[0].message.content
+            except (ImportError, AttributeError):
+                # Fall back to the older API format
+                completion = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development, particularly for the Baubles API. You analyze GitHub issues to determine if they can be automatically fixed."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=1500
+                )
+                analysis = completion.choices[0].message.content
+        except Exception as e:
+            print(f"OpenAI API Error: {str(e)}")
+            # Provide a fallback analysis that indicates error
+            analysis = """
+            Error: Unable to analyze this issue with OpenAI API.
+            
+            CAN_FIX=No
+            FILES_TO_MODIFY=[]
+            FIX_TYPE=complex
+            """
         
         # Parse the response to get CAN_FIX, FILES_TO_MODIFY, FIX_TYPE
         can_fix = "No"
@@ -176,9 +200,21 @@ def analyze_with_openai(issue_data, comments_data, repo_files):
         }
 
 def set_output(name, value):
-    """Set GitHub Actions output variable."""
-    with open(os.environ.get("GITHUB_OUTPUT", ""), "a") as f:
-        f.write(f"{name}={value}\n")
+    """Set GitHub Actions output variable.
+    Works with both older and newer GitHub Actions environments."""
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        # New method (Actions runner 2.297.0+)
+        with open(github_output, "a") as f:
+            if '\n' in str(value):
+                # Handle multi-line output with delimiters
+                delimiter = f"EOF_{name}_{os.urandom(8).hex()}"
+                f.write(f"{name}<<{delimiter}\n{value}\n{delimiter}\n")
+            else:
+                f.write(f"{name}={value}\n")
+    else:
+        # Fallback for older GitHub Actions
+        print(f"::set-output name={name}::{value}")
 
 def main():
     """Main function."""

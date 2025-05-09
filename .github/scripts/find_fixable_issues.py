@@ -98,18 +98,36 @@ def evaluate_issue_fixability(issue):
         Answer ONLY YES or NO, with no additional explanation.
         """
         
-        # Call OpenAI API
-        completion = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development. You evaluate if issues can be automatically fixed."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=5
-        )
-        
-        # Extract response
-        response = completion.choices[0].message.content.strip().upper()
+        # Call OpenAI API with error handling
+        try:
+            # Try the newer client-based API format first
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=openai.api_key)
+                completion = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development. You evaluate if issues can be automatically fixed."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=5
+                )
+                response = completion.choices[0].message.content.strip().upper()
+            except (ImportError, AttributeError):
+                # Fall back to the older API format
+                completion = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development. You evaluate if issues can be automatically fixed."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=5
+                )
+                response = completion.choices[0].message.content.strip().upper()
+        except Exception as e:
+            print(f"OpenAI API Error: {str(e)}")
+            # Fallback to conservative answer in case of API errors
+            response = "NO"
         return response == "YES"
     
     except Exception as e:

@@ -1,8 +1,0 @@
-/home/runner/workspace/src/main/java/com/seventodie/SevenToDie.java
-/home/runner/workspace/src/main/java/com/seventodie/api/BaubleType.java
-/home/runner/workspace/src/main/java/com/seventodie/api/IBauble.java
-/home/runner/workspace/src/main/java/com/seventodie/commands/BaublesCommand.java
-/home/runner/workspace/src/main/java/com/seventodie/listeners/InventoryListener.java
-/home/runner/workspace/src/main/java/com/seventodie/listeners/PlayerListener.java
-/home/runner/workspace/src/main/java/com/seventodie/manager/BaubleManager.java
-/home/runner/workspace/src/main/java/com/seventodie/util/Config.java

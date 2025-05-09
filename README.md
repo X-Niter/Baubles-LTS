@@ -1,7 +1,6 @@
-Baubles LTS
-===========
+# SevenToDie Baubles Plugin
 
-A performance-optimized fork of the Baubles mod API for Minecraft Forge 1.12.2, which adds 7 bauble slots to players' inventory:
+A high-performance Minecraft plugin adding a baubles equipment system for Paper/Spigot servers. This plugin adds 7 bauble slots to players' inventory:
 - Amulet slot
 - Belt slot
 - Head slot
@@ -9,37 +8,78 @@ A performance-optimized fork of the Baubles mod API for Minecraft Forge 1.12.2, 
 - Charm slot
 - Two ring slots
 
-This fork maintains complete backward compatibility with the original Baubles mod while providing significant performance improvements. It serves as a drop-in replacement for other mods that depend on Baubles.
+This plugin is inspired by the original Baubles mod for Forge but rebuilt from scratch for modern Paper servers.
 
-## Performance Improvements
+## Features
 
-The following optimizations have been implemented while maintaining exact API compatibility:
+- **Bauble Slot System**: Adds 7 special equipment slots for magical items
+- **API for Developers**: Simple API for creating custom bauble items with special effects
+- **Performance Optimized**: Built with efficiency in mind to minimize server impact
+- **Command System**: Easy-to-use `/baubles` command to open the bauble inventory
+- **Event System**: Comprehensive events for bauble equip/unequip actions
+
+## Performance Optimizations
+
+The following optimizations have been implemented to ensure maximum server performance:
 
 1. **Storage optimizations**:
-   - Improved item addition/removal with more efficient array operations
-   - Enhanced slot management with optimized resizing algorithms
-   - Reduced redundant object creation during inventory modifications
+   - Efficient item management with optimized data structures
+   - Enhanced slot access with fast lookup algorithms
+   - Reduced redundant object creation during inventory interactions
 
 2. **Memory management**:
-   - Optimized buffer handling to reduce memory allocations
-   - Improved reference management to prevent memory leaks
-   - More efficient network packet serialization/deserialization
+   - Object pooling for frequently used network packets
+   - String interning for common text values
+   - Type caching for faster validation checks
 
-3. **Capability system improvements**:
-   - Faster capability validation with optimized type checking
-   - More efficient capability serialization and copying
-   - Fixed critical bugs in storage capability system
+3. **Event handling improvements**:
+   - Optimized event dispatching to reduce overhead
+   - Smart event filtering to prevent unnecessary processing
+   - Efficient listener registration and management
 
-4. **Network optimizations**:
-   - Enhanced packet buffer handling with proper resource management
-   - Reduced unnecessary buffer copying during network operations
-   - Optimized client/server synchronization
+4. **Thread safety**:
+   - Proper concurrency handling for player data
+   - Safe shared resource access
+   - Optimized synchronization strategies
 
-The mod has no content of its own - it serves as an API foundation for other mods to build upon.
+## Development
+
+### Repository Maintenance
+
+This repository includes maintenance scripts to keep the codebase clean:
+
+- **clean-repo.sh**: Run this script before committing to remove temporary files and build artifacts
+  ```
+  ./clean-repo.sh
+  ```
+
+- **setup-hooks.sh**: Run this script after cloning to set up Git hooks
+  ```
+  ./setup-hooks.sh
+  ```
+
+- **Pre-commit Hook**: The repository includes a Git pre-commit hook that automatically runs the cleaning script before each commit
+
+### Building
+
+The project can be built using Maven:
+
+```
+mvn clean package
+```
+
+The built JAR will be in the `target` directory.
+
+## Installation
+
+1. Place the JAR file in your server's `plugins` directory
+2. Restart your server
+3. Configure the plugin in the `plugins/SevenToDie/config.yml` file if needed
 
 ## License
-Baubles LTS is distributed under the Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0) license.
+
+SevenToDie is distributed under the Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0) license.
 
 ## Credits
-- [Original Baubles mod By:Azanor13](https://www.curseforge.com/minecraft/mc-mods/baubles)
-- Performance optimizations by SevenToDie team
+- Original concept inspired by [Baubles mod By:Azanor13](https://www.curseforge.com/minecraft/mc-mods/baubles)
+- Developed by the SevenToDie team

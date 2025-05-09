@@ -97,18 +97,46 @@ def identify_files_to_fix(issue_data):
         "src/main/java/baubles/common/event/EventHandlerEntity.java,src/main/java/baubles/api/BaubleType.java"
         """
         
-        # Call OpenAI API
-        completion = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development. You identify files that need to be modified to fix issues."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=100
-        )
-        
-        # Extract and clean response
-        file_list = completion.choices[0].message.content.strip()
+        # Call OpenAI API with error handling
+        try:
+            # Try the newer client-based API format first
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=openai.api_key)
+                completion = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development. You identify files that need to be modified to fix issues."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=100
+                )
+                file_list = completion.choices[0].message.content.strip()
+            except (ImportError, AttributeError):
+                # Fall back to the older API format
+                completion = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful AI assistant that specializes in Minecraft mod development. You identify files that need to be modified to fix issues."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=100
+                )
+                file_list = completion.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"OpenAI API Error: {str(e)}")
+            # Try to extract file paths from the issue title and body as a fallback
+            potential_files = []
+            for line in issue_body.split('\n'):
+                if '.java' in line:
+                    # Very simplistic extraction - just look for Java file mentions
+                    for word in line.split():
+                        if word.endswith('.java'):
+                            clean_word = word.strip('.,():;"\'\n')
+                            if clean_word.startswith('src/'):
+                                potential_files.append(clean_word)
+            
+            file_list = ", ".join(potential_files) if potential_files else "src/main/java/baubles/common/Baubles.java"
         # Remove any quotes, extra spaces, or newlines
         file_list = file_list.replace('"', '').replace("'", "").strip()
         files = [f.strip() for f in file_list.split(",")]
@@ -152,18 +180,37 @@ def generate_fix(repo, issue_data, file_path, file_content):
         If the file does not need to be changed, repeat the original content exactly.
         """
         
-        # Call OpenAI API
-        completion = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an expert Java developer specializing in Minecraft modding. Your task is to fix issues in a performance-optimized fork of the Baubles mod while maintaining backward compatibility."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=4000
-        )
-        
-        # Extract response
-        fixed_content = completion.choices[0].message.content.strip()
+        # Call OpenAI API with error handling for different client versions
+        try:
+            # Try the newer client-based API format first
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=openai.api_key)
+                completion = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are an expert Java developer specializing in Minecraft modding. Your task is to fix issues in a performance-optimized fork of the Baubles mod while maintaining backward compatibility."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=4000
+                )
+                fixed_content = completion.choices[0].message.content.strip()
+            except (ImportError, AttributeError):
+                # Fall back to the older API format
+                completion = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are an expert Java developer specializing in Minecraft modding. Your task is to fix issues in a performance-optimized fork of the Baubles mod while maintaining backward compatibility."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=4000
+                )
+                fixed_content = completion.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"OpenAI API Error while generating fix: {str(e)}")
+            # Return the original content to avoid breaking things
+            print(f"Returning original content for {file_path} due to API error")
+            return file_content
         
         # If the fixed content has code blocks, extract just the code
         code_pattern = re.compile(r"```(?:java)?\n([\s\S]*?)\n```")
@@ -201,15 +248,30 @@ def apply_fix_to_file(file_path, fixed_content):
 def test_fix(repo):
     """Test the fix by building the project."""
     try:
-        # Build the project
-        build_cmd = ["./gradlew", "build"]
+        # Detect build system
+        if os.path.exists("pom.xml"):
+            # Maven project
+            build_cmd = ["mvn", "package"]
+        elif os.path.exists("build.gradle"):
+            # Gradle project with wrapper
+            if os.path.exists("./gradlew"):
+                build_cmd = ["./gradlew", "build"]
+            else:
+                build_cmd = ["gradle", "build"]
+        else:
+            print("Could not detect build system (no pom.xml or build.gradle)")
+            return False
+        
+        print(f"Executing build command: {' '.join(build_cmd)}")
         result = subprocess.run(build_cmd, capture_output=True, text=True)
         
         if result.returncode == 0:
             print("Build successful")
             return True
         else:
-            print(f"Build failed: {result.stderr}")
+            print(f"Build failed with exit code {result.returncode}")
+            print(f"Standard output: {result.stdout[:500]}...")
+            print(f"Error output: {result.stderr[:500]}...")
             return False
     
     except Exception as e:
