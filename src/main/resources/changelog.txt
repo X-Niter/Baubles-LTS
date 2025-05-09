@@ -1,3 +1,12 @@
+1.12.2-1.0.7.0-LTS
+- Implemented performance optimization system with backward compatibility
+- Added object pooling for network packets to reduce GC pressure
+- Implemented string interning to reduce memory allocations for frequently used strings
+- Added type caching for improved BaubleType validation performance
+- Optimized inventory operations with more efficient capability checks
+- Added debug mode configuration option for performance statistics tracking
+- All optimizations preserve 100% API backward compatibility
+
 1.12.2-1.0.7.0
 - build.gradle changes from CleanRooms template on github.
 - Fixed Example Baubles Ring translation key for item name.

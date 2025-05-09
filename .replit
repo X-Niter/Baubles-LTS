@@ -46,8 +46,12 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "mkdir -p server && cd server && if [ ! -f paper.jar ]; then wget -O paper.jar https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/228/downloads/paper-1.21.4-228.jar; fi && echo \"eula=true\" > eula.txt && mkdir -p plugins && cp ../target/SevenToDie-1.0.0.jar plugins/ 2>/dev/null || echo \"Plugin JAR not found, please build first\" && /nix/store/zmj3m7wrgqf340vqd4v90w8dw371vhjg-openjdk-17.0.7+7/bin/java -Xms1G -Xmx1G -jar paper.jar nogui"
+args = "mkdir -p server && cd server && if [ ! -f paper.jar ]; then wget -O paper.jar https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/228/downloads/paper-1.21.4-228.jar; fi && echo \"eula=true\" > eula.txt && mkdir -p plugins && cp ../target/SevenToDie-1.0.0.jar plugins/ 2>/dev/null || echo \"Plugin JAR not found, please build first\" && /nix/store/2vwkssqpzykk37r996cafq7x63imf4sp-openjdk-21+35/bin/java -Xms1G -Xmx1G -jar paper.jar nogui"
 waitForPort = 25565
 
 [deployment]
 run = ["sh", "-c", "mkdir -p server && cd server && if [ ! -f paper.jar ]; then wget -O paper.jar https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/398/downloads/paper-1.21.4-398.jar; fi && echo \"eula=true\" > eula.txt && mkdir -p plugins && cd .. && mvn package && cp target/SevenToDie-1.0.0.jar server/plugins/ && cd server && java -Xms1G -Xmx1G -jar paper.jar nogui"]
+
+[[ports]]
+localPort = 25565
+externalPort = 80

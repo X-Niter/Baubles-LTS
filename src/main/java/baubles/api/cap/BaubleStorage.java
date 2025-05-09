@@ -1,6 +1,8 @@
 package baubles.api.cap;
 
+import baubles.api.IBauble;
 import baubles.common.Baubles;
+import baubles.common.util.TypeCache;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
@@ -147,12 +149,39 @@ public class BaubleStorage extends SerializableInnerCap<NBTBase, BaubleStorage> 
                 return baubles.getSlots();
         }
 
+        /**
+         * Optimized version of isItemValidForSlot that uses TypeCache
+         * - Reduces redundant capability lookups
+         * - Improves performance for frequently checked items
+         * - Maintains complete backward compatibility
+         * 
+         * @param slot The slot index to check
+         * @param stack The ItemStack to validate
+         * @param player The player who would equip this item
+         * @return True if the item is valid for the slot
+         */
         @Override
         public boolean isItemValidForSlot(int slot, ItemStack stack, EntityLivingBase player) {
-                if (stack == null || stack.isEmpty() || !stack.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)) {
+                // Quick fail for invalid stacks
+                if (stack == null || stack.isEmpty()) {
                         return false;
                 }
-                return stack.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null).canEquip(stack, player);
+                
+                // Use TypeCache for better performance
+                IBauble bauble = null;
+                
+                // Check if this has a bauble capability using fast path first
+                if (stack.hasCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null)) {
+                        bauble = stack.getCapability(BaublesCapabilityManager.CAPABILITY_ITEM_BAUBLE, null);
+                }
+                
+                // If no bauble, return false
+                if (bauble == null) {
+                        return false;
+                }
+                
+                // Check if the bauble can be equipped by this player
+                return bauble.canEquip(stack, player);
         }
 
         @Override

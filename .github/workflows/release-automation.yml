@@ -1,0 +1,403 @@
+name: Release Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      custom_version:
+        description: 'Custom version (leave empty to auto-increment)'
+        required: false
+        type: string
+      release_notes:
+        description: 'Additional release notes'
+        required: false
+        type: string
+  
+  # Optionally trigger on tag creation
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      new_version: ${{ steps.set_version.outputs.new_version }}
+      release_branch: ${{ steps.create_branch.outputs.release_branch }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history
+    
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai semver
+    
+    - name: Determine current version
+      id: get_version
+      run: |
+        # Extract version from Baubles.java
+        CURRENT_VERSION=$(grep -E "VERSION = \".*\"" src/main/java/baubles/common/Baubles.java | sed -E 's/.*VERSION = "(.*?)".*/\1/')
+        echo "Current version: $CURRENT_VERSION"
+        echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Set new version
+      id: set_version
+      run: |
+        CURRENT_VERSION="${{ steps.get_version.outputs.current_version }}"
+        RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+        CUSTOM_VERSION="${{ github.event.inputs.custom_version }}"
+        
+        if [[ -n "$CUSTOM_VERSION" ]]; then
+          # Use custom version if provided
+          NEW_VERSION="$CUSTOM_VERSION"
+        else
+          # Parse current version and increment based on release type
+          python -c "
+import semver
+import os
+
+current = '$CURRENT_VERSION'
+try:
+    # Try to parse as SemVer
+    v = semver.VersionInfo.parse(current.replace('1.12.2-', '').replace('-perf', ''))
+    
+    # Increment based on release type
+    if '$RELEASE_TYPE' == 'major':
+        v = v.bump_major()
+    elif '$RELEASE_TYPE' == 'minor':
+        v = v.bump_minor()
+    else:  # patch by default
+        v = v.bump_patch()
+    
+    # Format new version with prefix/suffix if needed
+    new_version = f'1.12.2-{v}-perf'
+    print(f'New version: {new_version}')
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+        f.write(f'new_version={new_version}\\n')
+except ValueError:
+    print('Could not parse version as SemVer')
+    exit(1)
+          "
+        fi
+        
+        # If NEW_VERSION wasn't set by the Python script (custom version case)
+        if [[ -z "$NEW_VERSION" && -n "$CUSTOM_VERSION" ]]; then
+          echo "new_version=$CUSTOM_VERSION" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create release branch
+      id: create_branch
+      run: |
+        NEW_VERSION="${{ steps.set_version.outputs.new_version }}"
+        RELEASE_BRANCH="release/v$NEW_VERSION"
+        
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        git checkout -b "$RELEASE_BRANCH"
+        
+        echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+    
+    - name: Update version in files
+      run: |
+        NEW_VERSION="${{ steps.set_version.outputs.new_version }}"
+        
+        # Update version in Baubles.java
+        sed -i "s/VERSION = \".*\"/VERSION = \"$NEW_VERSION\"/" src/main/java/baubles/common/Baubles.java
+        
+        # Update version in CHANGELOG.md
+        # Add new section at the top of the changelog
+        CHANGELOG_ENTRY="## $NEW_VERSION\n\n$(date +'%Y-%m-%d')\n\n${{ github.event.inputs.release_notes || 'Performance improvements and bug fixes' }}\n\n"
+        sed -i "0,/^##/s//## $NEW_VERSION\n\n$(date +'%Y-%m-%d')\n\n${{ github.event.inputs.release_notes || 'Performance improvements and bug fixes' }}\n\n##/" CHANGELOG.md
+    
+    - name: Generate release notes
+      id: generate_notes
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python -c "
+import os
+import openai
+import subprocess
+import re
+from datetime import datetime
+
+# Configure OpenAI
+openai.api_key = os.environ.get('OPENAI_API_KEY')
+
+# Get git log for changes since last release
+last_tag = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0'], text=True).strip()
+git_log = subprocess.check_output(['git', 'log', f'{last_tag}..HEAD', '--pretty=format:%s'], text=True)
+
+if not git_log.strip():
+    git_log = subprocess.check_output(['git', 'log', '-n', '20', '--pretty=format:%s'], text=True)
+
+# Format context
+new_version = '${{ steps.set_version.outputs.new_version }}'
+context = f'''
+Changes since last release:
+{git_log}
+
+Current date: {datetime.now().strftime('%Y-%m-%d')}
+New version: {new_version}
+'''
+
+# Generate release notes with OpenAI
+if openai.api_key:
+    try:
+        response = openai.ChatCompletion.create(
+            model='gpt-4',
+            messages=[
+                {'role': 'system', 'content': 'You are a helpful assistant that generates professional release notes for a Minecraft mod called Baubles LTS. This is a performance-optimized fork of the Baubles mod.'},
+                {'role': 'user', 'content': f'Please generate comprehensive release notes based on these changes:\n\n{context}\n\nFormat the notes in Markdown with sections for Features, Improvements, Bug Fixes, and API Changes. Be specific but concise.'}
+            ],
+            max_tokens=1000
+        )
+        
+        release_notes = response.choices[0].message.content.strip()
+        
+        # Write to a file
+        with open('RELEASE_NOTES.md', 'w') as f:
+            f.write(release_notes)
+            
+        print('Generated release notes successfully')
+    except Exception as e:
+        print(f'Error generating release notes: {str(e)}')
+        with open('RELEASE_NOTES.md', 'w') as f:
+            f.write(f'# Release {new_version}\n\n## Changes\n\n{git_log.replace(\"\\n\", \"\\n- \")}')
+else:
+    print('OpenAI API key not set, using basic release notes')
+    with open('RELEASE_NOTES.md', 'w') as f:
+        f.write(f'# Release {new_version}\n\n## Changes\n\n{git_log.replace(\"\\n\", \"\\n- \")}')
+        "
+    
+    - name: Commit changes
+      run: |
+        git add src/main/java/baubles/common/Baubles.java CHANGELOG.md
+        git commit -m "Bump version to ${{ steps.set_version.outputs.new_version }}"
+        git push origin ${{ steps.create_branch.outputs.release_branch }}
+    
+    - name: Create pull request
+      id: create_pr
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          try {
+            const newVersion = '${{ steps.set_version.outputs.new_version }}';
+            const releaseBranch = '${{ steps.create_branch.outputs.release_branch }}';
+            
+            const fs = require('fs');
+            let releaseNotes = '';
+            try {
+              releaseNotes = fs.readFileSync('RELEASE_NOTES.md', 'utf8');
+            } catch (error) {
+              releaseNotes = `Release ${newVersion}`;
+            }
+            
+            const response = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release ${newVersion}`,
+              body: releaseNotes,
+              head: releaseBranch,
+              base: 'master'
+            });
+            
+            console.log(`Created PR #${response.data.number}: ${response.data.html_url}`);
+            
+            // Apply labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: response.data.number,
+              labels: ['release', 'automated-pr']
+            });
+            
+            // Return the PR number
+            return response.data.number;
+          } catch (error) {
+            console.log(`Error creating PR: ${error}`);
+            return null;
+          }
+
+  build-and-test:
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ needs.prepare-release.outputs.release_branch }}
+    
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Build the project
+      run: |
+        chmod +x ./gradlew
+        ./gradlew clean build
+    
+    - name: Run tests
+      run: |
+        ./gradlew test
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: jars
+        path: |
+          target/*.jar
+          build/libs/*.jar
+    
+    - name: Comment on PR with build status
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          
+          // List all generated JAR files
+          let jarFiles = [];
+          try {
+            const targetFiles = fs.readdirSync('target').filter(file => file.endsWith('.jar'));
+            const buildFiles = fs.readdirSync('build/libs').filter(file => file.endsWith('.jar'));
+            jarFiles = [...targetFiles.map(f => `target/${f}`), ...buildFiles.map(f => `build/libs/${f}`)];
+          } catch (error) {
+            console.log(`Error listing JARs: ${error}`);
+            jarFiles = ['No JAR files found or error reading directories'];
+          }
+          
+          const comment = `## Release Build Status ✅
+          
+          Build completed successfully for version ${{ needs.prepare-release.outputs.new_version }}
+          
+          ### Generated artifacts:
+          ${jarFiles.map(jar => `- \`${jar}\``).join('\n')}
+          
+          The release PR is ready to be reviewed and merged.`;
+          
+          const pullRequestNumber = '${{ steps.create_pr.outputs.result }}';
+          if (pullRequestNumber && pullRequestNumber !== 'null') {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(pullRequestNumber),
+              body: comment
+            });
+          } else {
+            console.log('PR number not available, skipping comment');
+          }
+
+  create-release:
+    needs: [prepare-release, build-and-test]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: jars
+        path: jars
+    
+    - name: Create GitHub Release
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Get tag name and version
+          const tagName = context.ref.replace('refs/tags/', '');
+          const version = tagName.replace('v', '');
+          
+          // Read release notes if available
+          let releaseNotes = '';
+          try {
+            releaseNotes = fs.readFileSync('RELEASE_NOTES.md', 'utf8');
+          } catch (error) {
+            // Extract release notes from changelog
+            try {
+              const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+              const versionSection = changelog.match(new RegExp(`## ${version}[\\s\\S]*?(?=## |$)`));
+              if (versionSection) {
+                releaseNotes = versionSection[0];
+              } else {
+                releaseNotes = `Release ${version}`;
+              }
+            } catch (error) {
+              releaseNotes = `Release ${version}`;
+            }
+          }
+          
+          // Create the release
+          const release = await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: tagName,
+            name: `Baubles LTS ${version}`,
+            body: releaseNotes,
+            draft: false,
+            prerelease: version.includes('beta') || version.includes('alpha') || version.includes('rc')
+          });
+          
+          console.log(`Created release: ${release.data.html_url}`);
+          
+          // Upload the JAR files
+          const jarsDir = 'jars';
+          if (fs.existsSync(jarsDir)) {
+            const jarFiles = fs.readdirSync(jarsDir).filter(file => file.endsWith('.jar'));
+            
+            for (const jarFile of jarFiles) {
+              const jarPath = path.join(jarsDir, jarFile);
+              
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id,
+                name: jarFile,
+                data: fs.readFileSync(jarPath)
+              });
+              
+              console.log(`Uploaded asset: ${jarFile}`);
+            }
+          }

@@ -4,6 +4,9 @@ import baubles.api.BaubleType;
 import baubles.api.cap.BaublesCapabilityManager;
 import baubles.common.event.CommandBaubles;
 import baubles.common.network.PacketHandler;
+import baubles.common.util.PacketPool;
+import baubles.common.util.StringPool;
+import baubles.common.util.TypeCache;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
@@ -28,7 +31,7 @@ public class Baubles {
 
         public static final String MODID = "baubles";
         public static final String MODNAME = "Baubles LTS";
-        public static final String VERSION = "1.12.2-1.0.6.2-perf";
+        public static final String VERSION = "1.12.2-1.0.7.0-LTS";
         public static final Logger log = LogManager.getLogger(MODID.toUpperCase());
         public static final int GUI = 0;
         @SidedProxy(clientSide = "baubles.client.ClientProxy", serverSide = "baubles.common.CommonProxy")
@@ -76,10 +79,50 @@ public class Baubles {
                 Config.save();
         }
 
+        /**
+         * Initialize the mod systems including performance optimizations
+         * - Initializes string pooling for network packets
+         * - Prepares packet pooling system
+         * - Sets up type caching for bauble validation
+         */
         @EventHandler
         public void init(FMLInitializationEvent evt) {
+                // Basic initialization
                 NetworkRegistry.INSTANCE.registerGuiHandler(instance, proxy);
                 proxy.init();
+                
+                // Initialize performance optimization systems
+                initPerformanceOptimizations();
+        }
+        
+        /**
+         * Initialize all performance optimization systems
+         * This method centralizes the initialization of all performance-related
+         * optimizations added in the LTS version
+         */
+        private void initPerformanceOptimizations() {
+                // Log startup information about optimizations
+                log.info("Initializing Baubles LTS performance optimizations");
+                
+                // Initialize string interning system
+                StringPool.clear();
+                log.info("String interning system initialized");
+                
+                // Initialize packet pooling system
+                PacketPool.clearPool();
+                PacketPool.resetStats();
+                log.info("Packet pooling system initialized");
+                
+                // Initialize type caching system
+                TypeCache.clearCache();
+                
+                // Enable stats tracking in debug mode
+                if (Config.debug) {
+                    log.info("Debug mode enabled: performance statistics tracking activated");
+                    TypeCache.setStatsTracking(true);
+                }
+                
+                log.info("Performance optimizations initialized successfully");
         }
 
         @EventHandler

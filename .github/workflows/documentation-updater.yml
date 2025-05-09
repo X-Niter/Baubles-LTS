@@ -1,0 +1,129 @@
+name: Documentation Updater
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'src/main/java/baubles/api/**'
+      - 'src/main/java/baubles/common/**'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of documentation update'
+        required: true
+        default: 'api'
+        type: choice
+        options:
+          - api
+          - readme
+          - all
+
+jobs:
+  update-api-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai
+
+    - name: Generate API documentation
+      if: ${{ github.event.inputs.update_type == 'api' || github.event.inputs.update_type == 'all' || github.event_name == 'push' }}
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python .github/scripts/generate_api_docs.py \
+          --output-dir docs/api \
+          --api-paths "src/main/java/baubles/api" \
+          --format markdown
+    
+    - name: Update README
+      if: ${{ github.event.inputs.update_type == 'readme' || github.event.inputs.update_type == 'all' }}
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        # Create API doc directory if it doesn't exist
+        mkdir -p docs/api
+        
+        python .github/scripts/update_readme.py
+    
+    - name: Create pull request
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          
+          // Check if there are changes
+          const result = await exec.getExecOutput('git', ['status', '--porcelain']);
+          if (!result.stdout.trim()) {
+            console.log('No changes to documentation files');
+            return;
+          }
+          
+          // Set up git config
+          await exec.exec('git', ['config', 'user.name', 'github-actions[bot]']);
+          await exec.exec('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
+          
+          // Create branch name
+          const branchName = `docs/update-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+          
+          // Create branch
+          await exec.exec('git', ['checkout', '-b', branchName]);
+          
+          // Add files
+          await exec.exec('git', ['add', 'docs']);
+          if (fs.existsSync('README.md')) {
+            await exec.exec('git', ['add', 'README.md']);
+          }
+          
+          // Commit
+          await exec.exec('git', ['commit', '-m', 'Update documentation [automated]']);
+          
+          // Push
+          await exec.exec('git', ['push', 'origin', branchName]);
+          
+          // Create PR
+          const pr = await github.rest.pulls.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: 'Update Documentation [Automated]',
+            body: `This PR updates the documentation based on recent code changes.
+            
+            ## Changes made:
+            - Updated API documentation in the docs/api directory
+            ${fs.existsSync('README.md') ? '- Updated README.md with current project status' : ''}
+            
+            Please review these documentation changes.`,
+            head: branchName,
+            base: 'master'
+          });
+          
+          console.log(`Created PR #${pr.data.number}: ${pr.data.html_url}`);
+          
+          // Add labels
+          await github.rest.issues.addLabels({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr.data.number,
+            labels: ['documentation', 'automated-pr']
+          });

@@ -1,0 +1,219 @@
+name: Auto Fix Issues
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to analyze for auto-fixing'
+        required: true
+        type: string
+  
+  # Scheduled trigger
+  schedule:
+    # Run weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  find-fixable-issues:
+    name: Find Fixable Issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    permissions:
+      contents: read
+      issues: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai requests
+    
+    - name: Find fixable issues
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python .github/scripts/find_fixable_issues.py \
+          --repo "${{ github.repository }}" \
+          --limit 5 \
+          --days 30
+  
+  analyze-issue:
+    name: Analyze Issue for Auto-Fix
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      can_fix: ${{ steps.analyze.outputs.can_fix }}
+      files_to_modify: ${{ steps.analyze.outputs.files_to_modify }}
+      fix_type: ${{ steps.analyze.outputs.fix_type }}
+      issue_number: ${{ steps.analyze.outputs.issue_number }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai requests
+    
+    - name: Analyze issue
+      id: analyze
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python .github/scripts/auto_fix_analyzer.py \
+          --repo "${{ github.repository }}" \
+          --issue-number "${{ github.event.inputs.issue_number }}"
+  
+  apply-fix:
+    name: Apply Auto-Fix
+    runs-on: ubuntu-latest
+    needs: analyze-issue
+    if: needs.analyze-issue.outputs.can_fix == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai requests
+    
+    - name: Apply fix
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python .github/scripts/apply_auto_fix.py \
+          --repo "${{ github.repository }}" \
+          --issue-number "${{ needs.analyze-issue.outputs.issue_number }}"
+    
+    - name: Set up Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Create branch and commit changes
+      id: commit
+      run: |
+        # Create branch name based on issue number
+        BRANCH_NAME="auto-fix/issue-${{ needs.analyze-issue.outputs.issue_number }}"
+        
+        # Check if we have changes to commit
+        if [[ -z "$(git status --porcelain)" ]]; then
+          echo "No changes to commit"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # Create and switch to new branch
+        git checkout -b $BRANCH_NAME
+        
+        # Add and commit changes
+        git add .
+        git commit -m "Auto-fix: Issue #${{ needs.analyze-issue.outputs.issue_number }}"
+        
+        # Push branch
+        git push -u origin $BRANCH_NAME
+        
+        echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        echo "has_changes=true" >> $GITHUB_OUTPUT
+    
+    - name: Create pull request
+      if: steps.commit.outputs.has_changes == 'true'
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          try {
+            const issueNumber = ${{ needs.analyze-issue.outputs.issue_number }};
+            const branchName = '${{ steps.commit.outputs.branch_name }}';
+            
+            // Get issue details
+            const issue = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+            
+            // Create PR
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Auto-fix: ${issue.data.title}`,
+              body: `This is an automated fix for issue #${issueNumber}.
+              
+              ## What this fixes
+              
+              ${issue.data.body}
+              
+              ## Implementation details
+              
+              This PR was generated automatically by the Auto-Fix workflow.
+              The changes were created based on the issue description and repository analysis.
+              
+              Please review the changes carefully before merging.
+              
+              Fixes #${issueNumber}`,
+              head: branchName,
+              base: 'master'
+            });
+            
+            console.log(`Created PR #${pr.data.number}: ${pr.data.html_url}`);
+            
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.data.number,
+              labels: ['auto-fix', 'automated-pr']
+            });
+            
+            // Add comment on issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `I've created a pull request with an automated fix: #${pr.data.number}
+              
+              Please review the PR and merge it if the changes look good.`
+            });
+          } catch (error) {
+            console.log(`Error creating PR: ${error}`);
+          }

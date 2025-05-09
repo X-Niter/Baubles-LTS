@@ -1,0 +1,166 @@
+name: Issue Manager
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to analyze'
+        required: true
+        type: string
+
+jobs:
+  analyze-issue:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && (github.event.action == 'opened' || github.event.action == 'reopened')) ||
+      (github.event_name == 'workflow_dispatch')
+    permissions:
+      issues: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai requests
+    
+    - name: Set issue number
+      id: set_issue
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "issue_number=${{ github.event.inputs.issue_number }}" >> $GITHUB_OUTPUT
+        else
+          echo "issue_number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Analyze issue
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python .github/scripts/issue_analyzer.py \
+          --repo "${{ github.repository }}" \
+          --issue-number "${{ steps.set_issue.outputs.issue_number }}" \
+          --trigger-event "${{ github.event_name }}" \
+          --event-action "${{ github.event.action }}"
+  
+  analyze-issue-comment:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issue_comment' && github.event.action == 'created' &&
+      github.event.issue.state == 'open' && !contains(github.event.issue.labels.*.name, 'wontfix')
+    permissions:
+      issues: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Check if comment mentions bot
+      id: check_mention
+      run: |
+        # Check if comment mentions the bot
+        COMMENT="${{ github.event.comment.body }}"
+        if [[ "$COMMENT" == *"@BaublesLTSBot"* || "$COMMENT" == *"@${{ github.repository_owner }}"* ]]; then
+          echo "is_mentioned=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_mentioned=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Set up Python
+      if: steps.check_mention.outputs.is_mentioned == 'true'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      if: steps.check_mention.outputs.is_mentioned == 'true'
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai requests
+    
+    - name: Analyze comment
+      if: steps.check_mention.outputs.is_mentioned == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python .github/scripts/issue_analyzer.py \
+          --repo "${{ github.repository }}" \
+          --issue-number "${{ github.event.issue.number }}" \
+          --trigger-event "issue_comment" \
+          --event-action "created" \
+          --comment-id "${{ github.event.comment.id }}"
+  
+  weekly-issue-update:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    # Run weekly on Monday at 9:00 UTC
+    if: github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai requests
+    
+    - name: Get stale issues
+      id: get_issues
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const date = new Date();
+          date.setDate(date.getDate() - 14); // 2 weeks ago
+          const since = date.toISOString();
+          
+          const query = `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open updated:<${since}`;
+          
+          console.log(`Searching for stale issues with query: ${query}`);
+          
+          const { data: searchResult } = await github.rest.search.issuesAndPullRequests({
+            q: query,
+            per_page: 10
+          });
+          
+          const issueNumbers = searchResult.items.map(issue => issue.number);
+          console.log(`Found ${issueNumbers.length} stale issues: ${issueNumbers.join(', ')}`);
+          
+          return issueNumbers;
+    
+    - name: Update stale issues
+      if: steps.get_issues.outputs.result != '[]'
+      run: |
+        ISSUES=$(echo '${{ steps.get_issues.outputs.result }}' | tr -d '[]' | tr ',' ' ')
+        for ISSUE in $ISSUES; do
+          echo "Processing stale issue #$ISSUE"
+          python .github/scripts/issue_analyzer.py \
+            --repo "${{ github.repository }}" \
+            --issue-number $ISSUE \
+            --trigger-event "schedule" \
+            --event-action "stale"
+          
+          # Sleep to avoid rate limits
+          sleep 5
+        done

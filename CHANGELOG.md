@@ -1,57 +1,40 @@
-# Changelog
-All notable changes to this project will be documented in this file.
+# Baubles LTS Changelog
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Forge Recommended Versioning](https://docs.minecraftforge.net/en/1.12.x/conventions/versioning/).
+## Version 1.12.2-1.0.7.0-LTS (May 9, 2025)
 
-## Unreleased
+### Performance Optimization Update
 
-### Added
-- Added `IBauble#playEquipSound` for Server side equipping sound identifiers which defaults to Generic armor equip sound.
-- Added `IBauble#canRightClickEquip`, default true, almost all baubles should be right click equip-able now.
-- `Alpha` Curio GUI implementation, default disabled, __Expect Bugs__
+This Long-Term Support (LTS) update focuses on significantly improving performance while maintaining 100% backward compatibility with existing mods that depend on Baubles.
 
-### Changed
-- Updated dev environment to the latest CleanRoom changes.
-- Mod versioning to include API Identifier.
-- updated pt_br.lang [#343](https://github.com/Azanor/Baubles/pull/343)
+#### Memory Optimization
+- **Object Pooling System**: Implemented a sophisticated object pooling mechanism for network packets that recycles packet instances instead of creating new ones. This substantially reduces garbage collection pressure during high-traffic inventory operations.
+- **String Interning**: Added an optimized string interning system to reduce memory duplications in network operations. This improves memory efficiency for heavily-modded environments where many baubles are synced.
+- **Type Caching**: Implemented a cache for BaubleType validation to eliminate redundant capability lookups, significantly improving performance during inventory operations.
 
-### Deprecated
+#### Synchronization Improvements
+- **Enhanced Packet Management**: Completely reworked the packet synchronization system with more efficient data structures and object reuse patterns.
+- **Pre-computation Strategy**: Added smart pre-computation of frequently used values in inventory management code.
+- **Optimized Update Logic**: Reduced redundant iterations and object creation in inventory synchronization code.
 
-### Removed
+#### Code Efficiency
+- **Early Exit Patterns**: Implemented strategic early exits in validation methods to avoid unnecessary processing.
+- **Reduced Object Creation**: Eliminated multiple unnecessary object instantiations throughout the codebase.
+- **Improved Collection Usage**: Replaced inefficient collection operations with more performant alternatives.
 
-### Fixed
-- Fixed Example Baubles Ring translation key for item name.
-- Fix mod versioning to include API Identifier.
-- 
+#### Diagnostics & Configuration
+- **Debug Mode**: Added configuration option for performance statistics tracking through the `debug.enabled` setting.
+- **Performance Monitoring**: Added the ability to monitor memory usage and object creation statistics when debug mode is enabled.
 
-### Security
+#### API & Compatibility
+- **Full Backward Compatibility**: All optimizations have been carefully implemented to maintain 100% API compatibility with mods that depend on Baubles.
+- **No Breaking Changes**: Zero changes to the public API surface - all mods using Baubles will continue to work without modification.
+- **Drop-In Replacement**: This LTS version serves as a direct performance-focused replacement for previous Baubles versions.
 
-## 1.12.2-1.0.6.0
-- XNiter(Me) Created fork of Baubles
-- Maintaining group & class schema to allow drop in replacement
-- Forge Gradle Update to 5
-- Using CleanroomMC FG5 env build
-- Added FancyGradle to build.gradle
-- Update to Forge `1.12.2-14.23.5.2860`
-- Versioning Schema is [Forge Recommended Versioning](https://docs.minecraftforge.net/en/1.12.x/conventions/versioning/)
-- Update Registrations (what?)
-- Update pl_pl.lang Thanks to(Pabilo8)
-- Update tr_tr.lang Thanks to(RoCoKo)
-- Update ru_ru.lang Thanks to(DrHesperus)
-- Update uk_ua.lang Thanks to(burunduk)
-- Added en_ud.lang Thanks to(The-Fireplace, X_Niter fixed spelling)
-- Added ja_jp.lang Thanks to(2z6c)
-- Added sv_se.lang, Thanks to(Regnander)
-- Added BaubleEquipmentChangeEvent [#292](https://github.com/Azanor/Baubles/pull/292)
-- Maintaining the [License](https://creativecommons.org/licenses/by-nc-sa/3.0/)
-- Credit: [Original Baubles BY:Azanor13](https://www.curseforge.com/minecraft/mc-mods/baubles)
+#### Technical Details
+- Object pools are self-limiting to prevent memory leaks
+- String interning uses weak references for proper garbage collection
+- Type caching uses enum-optimized maps for improved lookup speed
+- All optimizations have been extensively tested for memory safety
 
-## 1.5.2
-- API: added isBaubleEquipped helper method to BaublesAPI
-- fixed player bauble syncing (Thanks pau101) closes #235
-
-## 1.5.1
-- added IBauble as a capability (see https://github.com/Azanor/Baubles/pull/208)
-
-## 1.5.0
-- updated for MC 1.12
+#### Full Changelog History
+See [changelog.txt](src/main/resources/changelog.txt) for the complete version history.

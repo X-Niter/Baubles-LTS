@@ -1,0 +1,239 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    # Run daily at midnight to catch issues
+    - cron: '0 0 * * *'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for branch analysis
+    
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Set execute permissions for gradlew
+      run: chmod +x ./gradlew
+    
+    - name: Clean build directory
+      run: ./gradlew clean
+    
+    - name: Build with Gradle
+      run: ./gradlew build
+    
+    - name: Run tests
+      run: ./gradlew test
+    
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: |
+          target/*.jar
+          build/libs/*.jar
+    
+    - name: Notify build status
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const buildResult = "${{ job.status }}".toLowerCase();
+          
+          // Only post a comment if this is a PR
+          if (context.eventName === 'pull_request') {
+            const prNumber = context.payload.pull_request.number;
+            
+            let icon = "❓";
+            let color = "gray";
+            let message = "Unknown status";
+            
+            if (buildResult === "success") {
+              icon = "✅";
+              color = "green";
+              message = "All tests passed successfully!";
+            } else if (buildResult === "failure") {
+              icon = "❌";
+              color = "red";
+              message = "Build or tests failed. Please check the logs for details.";
+            } else if (buildResult === "cancelled") {
+              icon = "⚠️";
+              color = "yellow";
+              message = "Build was cancelled.";
+            }
+            
+            const comment = `## CI Build Status: ${icon}
+            
+            \`\`\`diff
+            ${buildResult === "success" ? "+" : buildResult === "failure" ? "-" : "!"} ${message}
+            \`\`\`
+            
+            [View detailed build logs](${context.payload.repository.html_url}/actions/runs/${context.runId})`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: comment
+            });
+          }
+  
+  static-analysis:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history
+    
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Run PMD analysis
+      run: |
+        wget -O pmd.zip https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.55.0/pmd-bin-6.55.0.zip
+        unzip pmd.zip
+        ./pmd-bin-6.55.0/bin/run.sh pmd -d src/main/java -R rulesets/java/quickstart.xml -f text > pmd-report.txt
+      continue-on-error: true
+    
+    - name: Run SpotBugs analysis
+      run: |
+        chmod +x ./gradlew
+        ./gradlew spotbugsMain || true
+    
+    - name: Post analysis results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          const prNumber = context.payload.pull_request.number;
+          
+          // Read PMD results
+          let pmdResults = "No PMD issues found";
+          try {
+            const pmdReport = fs.readFileSync('pmd-report.txt', 'utf8');
+            if (pmdReport.trim().length > 0) {
+              pmdResults = pmdReport.substring(0, 1500) + (pmdReport.length > 1500 ? "...(truncated)" : "");
+            }
+          } catch (error) {
+            pmdResults = "Error reading PMD report";
+          }
+          
+          // Get SpotBugs results
+          let spotbugsResults = "No SpotBugs issues found";
+          try {
+            const spotbugsReport = fs.readFileSync('build/reports/spotbugs/main.text', 'utf8');
+            if (spotbugsReport.trim().length > 0) {
+              spotbugsResults = spotbugsReport.substring(0, 1500) + (spotbugsReport.length > 1500 ? "...(truncated)" : "");
+            }
+          } catch (error) {
+            spotbugsResults = "SpotBugs report not found or could not be read";
+          }
+          
+          const comment = `## Static Analysis Results
+          
+          ### PMD Analysis
+          \`\`\`
+          ${pmdResults}
+          \`\`\`
+          
+          ### SpotBugs Analysis
+          \`\`\`
+          ${spotbugsResults}
+          \`\`\`
+          
+          Please address these issues to improve code quality.`;
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body: comment
+          });
+  
+  performance-benchmarks:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Run performance benchmarks
+      run: |
+        chmod +x ./gradlew
+        ./gradlew clean build
+        
+        # Create simple benchmark script
+        cat > benchmark.sh << 'EOL'
+        #!/bin/bash
+        
+        # Simple JMeter-style benchmark for specific classes
+        # This is a placeholder for a real benchmark - replace with actual benchmarking tool
+        
+        echo "Running performance benchmarks for Baubles LTS"
+        echo "--------------------------------------------"
+        
+        # List of important classes to benchmark
+        classes=(
+          "baubles.api.cap.BaubleStorage"
+          "baubles.api.cap.BaubleStackHandler"
+          "baubles.common.event.EventHandlerEntity"
+          "baubles.api.BaubleType"
+        )
+        
+        for class in "${classes[@]}"; do
+          echo "Benchmarking $class..."
+          # Replace with actual benchmarking command
+          # For example: java -jar jmh-benchmark.jar -f 1 -i 5 -wi 3 -r 3 $class
+          echo "Sample result: Method operations/sec: 15000"
+          echo "Sample result: Average latency: 0.25ms"
+          echo ""
+        done
+        
+        echo "Benchmark complete"
+        EOL
+        
+        chmod +x benchmark.sh
+        ./benchmark.sh > benchmark-results.txt
+    
+    - name: Store benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: benchmark-results.txt

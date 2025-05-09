@@ -1,0 +1,245 @@
+name: PR Manager
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [master]
+
+jobs:
+  code-review:
+    name: Automated Code Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai requests
+    
+    - name: Run code review
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        python .github/scripts/pr_code_review.py \
+          --repo "${{ github.repository }}" \
+          --pr "${{ github.event.pull_request.number }}"
+  
+  validate-pr:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+    - name: Check for description
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          const prBody = context.payload.pull_request.body || '';
+          
+          // Check if PR description is insufficient
+          if (prBody.length < 50 && !context.payload.pull_request.draft) {
+            console.log('PR description is too short');
+            
+            // Comment on PR
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## PR Validation
+
+Please add more details to your PR description. A good PR description should include:
+
+1. What changes are being made
+2. Why these changes are necessary
+3. How the changes were implemented
+4. Any potential risks or considerations
+
+This helps reviewers understand your changes and speeds up the review process.`
+            });
+            
+            // Add needs-description label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              labels: ['needs-description']
+            });
+          }
+          
+          // Check for auto-generated PR from auto-fix
+          if (prBody.includes('This PR was generated automatically by the Auto-Fix workflow')) {
+            console.log('This is an auto-generated PR, skipping validation');
+            return;
+          }
+    
+    - name: Validate Breaking Changes
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { data: files } = await github.rest.pulls.listFiles({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.pull_request.number
+          });
+          
+          // Check for changes to API files
+          const apiChanges = files.filter(file => file.filename.includes('src/main/java/baubles/api/'));
+          
+          if (apiChanges.length > 0) {
+            // Look for potential breaking changes in diff
+            const breakingChangePatterns = [
+              'extends',
+              'implements',
+              'public.*?(?:class|interface|enum)',
+              'public.*?(?:method|void|return)',
+              '@Deprecated'
+            ];
+            
+            let hasBreakingChanges = false;
+            let breakingChangeFiles = [];
+            
+            for (const file of apiChanges) {
+              const diff = file.patch || '';
+              
+              for (const pattern of breakingChangePatterns) {
+                const regex = new RegExp(`\\+.*?${pattern}`, 'i');
+                if (regex.test(diff)) {
+                  hasBreakingChanges = true;
+                  breakingChangeFiles.push(file.filename);
+                  break;
+                }
+              }
+            }
+            
+            if (hasBreakingChanges) {
+              console.log('Potential breaking changes detected');
+              
+              // Comment on PR
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: `## ⚠️ Potential Breaking Changes Detected
+
+This PR modifies API files and may introduce breaking changes:
+
+${breakingChangeFiles.map(file => `- ${file}`).join('\n')}
+
+Please carefully review these changes and consider:
+1. Is backward compatibility maintained?
+2. Do existing mods that depend on Baubles still work?
+3. Has appropriate deprecation been marked for any removed functionality?
+
+Remember that Baubles LTS aims to maintain full compatibility with the original Baubles mod.`
+              });
+              
+              // Add breaking-change-review label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: ['breaking-change-review']
+              });
+            }
+          }
+  
+  auto-merge:
+    name: Auto-Merge for Automated PRs
+    runs-on: ubuntu-latest
+    needs: [code-review, validate-pr]
+    permissions:
+      contents: write
+      pull-requests: write
+    if: |
+      github.event.pull_request.user.login == 'github-actions[bot]' &&
+      (contains(github.event.pull_request.labels.*.name, 'auto-fix') || 
+       contains(github.event.pull_request.labels.*.name, 'documentation'))
+    
+    steps:
+    - name: Wait for checks to complete
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          
+          // Wait for checks to complete (max 5 minutes)
+          let checksComplete = false;
+          let attempts = 0;
+          while (!checksComplete && attempts < 30) {
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha
+            });
+            
+            const pendingChecks = checks.check_runs.filter(check => check.status !== 'completed');
+            
+            if (pendingChecks.length === 0) {
+              checksComplete = true;
+            } else {
+              console.log(`Waiting for ${pendingChecks.length} checks to complete...`);
+              await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+              attempts++;
+            }
+          }
+          
+          // Check if all checks have passed
+          const { data: finalChecks } = await github.rest.checks.listForRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: context.payload.pull_request.head.sha
+          });
+          
+          const failedChecks = finalChecks.check_runs.filter(check => check.conclusion !== 'success');
+          
+          if (failedChecks.length > 0) {
+            console.log('Some checks have failed, skipping auto-merge');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `Some checks have failed for this automated PR, manual review is required.`
+            });
+            return;
+          }
+          
+          // Merge the PR
+          try {
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: 'squash'
+            });
+            
+            console.log(`Successfully auto-merged PR #${prNumber}`);
+          } catch (error) {
+            console.log(`Error auto-merging PR: ${error}`);
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `Failed to auto-merge this PR. Manual merge is required.`
+            });
+          }
