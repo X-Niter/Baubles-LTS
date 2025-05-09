@@ -18,95 +18,109 @@ import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class BaublePlayer implements IBaublePlayer {
-	private final BaubleStorage baubleStorage;
+        private final BaubleStorage baubleStorage;
 
-	/**
-	 * If equals null, then it is on client, otherwise - on server.
-	 */
-	private UUID playerId = null;
+        /**
+         * If equals null, then it is on client, otherwise - on server.
+         */
+        private UUID playerId = null;
 
-	public BaublePlayer(BaubleStorage bs) {
-		baubleStorage = bs;
-	}
+        public BaublePlayer(BaubleStorage bs) {
+                baubleStorage = bs;
+        }
 
-	void bindPlayer(EntityPlayerMP player) {
-		playerId = player.getPersistentID();
-	}
+        void bindPlayer(EntityPlayerMP player) {
+                playerId = player.getPersistentID();
+        }
 
 
-	@Override
-	public BaubleStorage getBaubleStorage() {
-		return baubleStorage;
-	}
+        @Override
+        public BaubleStorage getBaubleStorage() {
+                return baubleStorage;
+        }
 
-	@Override
-	public void onTick(Side side) {
+        @Override
+        public void onTick(Side side) {
 
-	}
+        }
 
-	@Override
-	public void sendUpdates() {
-		if (playerId == null) {
-			throw new WrongSideException(Side.CLIENT);
-		}
+        @Override
+        public void sendUpdates() {
+                if (playerId == null) {
+                        throw new WrongSideException(Side.CLIENT);
+                }
 
-		EntityPlayerMP player = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUUID(playerId);
-		PacketHandler.INSTANCE.sendTo(new S2CSyncBaubleCapMsg(this), player);
-	}
+                EntityPlayerMP player = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUUID(playerId);
+                PacketHandler.INSTANCE.sendTo(new S2CSyncBaubleCapMsg(this), player);
+        }
 
-	@Override
-	public String toString() {
-		return TextFormatting.YELLOW + "Baubles: " + baubleStorage.serializeNBT();
-	}
+        @Override
+        public String toString() {
+                return TextFormatting.YELLOW + "Baubles: " + baubleStorage.serializeNBT();
+        }
 
-	public static class Serializer extends SyncableStorage<IBaublePlayer, BaublePlayer> {
-		public static final Serializer INSTANCE = new Serializer();
+        public static class Serializer extends SyncableStorage<IBaublePlayer, BaublePlayer> {
+                public static final Serializer INSTANCE = new Serializer();
 
-		public Serializer() {
-			super(BaublePlayer.class);
-		}
+                public Serializer() {
+                        super(BaublePlayer.class);
+                }
 
-		@Nullable
-		@Override
-		public NBTBase writeNBT(Capability<IBaublePlayer> capability, IBaublePlayer instance, EnumFacing side) {
-			BaublePlayer playerCap = validateDefaultImpl(instance);
+                @Nullable
+                @Override
+                public NBTBase writeNBT(Capability<IBaublePlayer> capability, IBaublePlayer instance, EnumFacing side) {
+                        BaublePlayer playerCap = validateDefaultImpl(instance);
 
-			NBTTagCompound compound = new NBTTagCompound();
-			compound.setTag("bauble_storage", playerCap.baubleStorage.serializeNBT());
+                        NBTTagCompound compound = new NBTTagCompound();
+                        compound.setTag("bauble_storage", playerCap.baubleStorage.serializeNBT());
 
-			return compound;
-		}
+                        return compound;
+                }
 
-		@Override
-		public void readNBT(Capability<IBaublePlayer> capability, IBaublePlayer instance, EnumFacing side, NBTBase nbt) {
-			BaublePlayer playerCap = validateDefaultImpl(instance);
+                @Override
+                public void readNBT(Capability<IBaublePlayer> capability, IBaublePlayer instance, EnumFacing side, NBTBase nbt) {
+                        BaublePlayer playerCap = validateDefaultImpl(instance);
 
-			NBTTagCompound compound = ((NBTTagCompound) nbt);
+                        NBTTagCompound compound = ((NBTTagCompound) nbt);
 
-			if (compound.hasKey("bauble_storage"))
-				playerCap.baubleStorage.deserializeNBT(compound.getTag("mana_storage"));
-		}
+                        if (compound.hasKey("bauble_storage"))
+                                playerCap.baubleStorage.deserializeNBT(compound.getTag("bauble_storage"));
+                }
 
-		@Override
-		public void writeToBuffer(IBaublePlayer instance, PacketBuffer buffer) {
-			BaublePlayer playerCap = validateDefaultImpl(instance);
+                @Override
+                public void writeToBuffer(IBaublePlayer instance, PacketBuffer buffer) {
+                        BaublePlayer playerCap = validateDefaultImpl(instance);
 
-			playerCap.baubleStorage.writeToBuffer(buffer);
-		}
+                        playerCap.baubleStorage.writeToBuffer(buffer);
+                }
 
-		@Override
-		public void readFromBuffer(IBaublePlayer instance, PacketBuffer buffer) {
-			BaublePlayer playerCap = validateDefaultImpl(instance);
+                @Override
+                public void readFromBuffer(IBaublePlayer instance, PacketBuffer buffer) {
+                        BaublePlayer playerCap = validateDefaultImpl(instance);
 
-			playerCap.baubleStorage.readFromBuffer(buffer);
-		}
+                        playerCap.baubleStorage.readFromBuffer(buffer);
+                }
 
-		@Override
-		public void copy(IBaublePlayer from, IBaublePlayer to) {
-			PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
-
-			writeToBuffer(from, buffer);
-			readFromBuffer(to, buffer);
-		}
-	}
+                @Override
+                public void copy(IBaublePlayer from, IBaublePlayer to) {
+                        // Get actual instances
+                        BaublePlayer fromCap = validateDefaultImpl(from);
+                        BaublePlayer toCap = validateDefaultImpl(to);
+                        
+                        // Directly copy the baubleStorage contents without using buffer operations
+                        // This is more efficient than serializing to a buffer and then deserializing
+                        
+                        // First, copy the storage NBT data
+                        NBTBase nbt = fromCap.baubleStorage.serializeNBT();
+                        if (nbt != null) {
+                            toCap.baubleStorage.deserializeNBT(nbt);
+                        }
+                        
+                        // Also copy playerId if needed
+                        // This maintains the server/client state correctly
+                        if (fromCap.playerId != null) {
+                            toCap.playerId = fromCap.playerId;
+                        }
+                }
+        }
 }

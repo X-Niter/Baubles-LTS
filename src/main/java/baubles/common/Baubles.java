@@ -19,75 +19,75 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 
 @Mod(
-		modid = Baubles.MODID,
-		name = Baubles.MODNAME,
-		version = Baubles.VERSION,
-		guiFactory = "baubles.client.gui.BaublesGuiFactory",
-		dependencies = "required-after:forge@[14.23.5.2860,);")
+                modid = Baubles.MODID,
+                name = Baubles.MODNAME,
+                version = Baubles.VERSION,
+                guiFactory = "baubles.client.gui.BaublesGuiFactory",
+                dependencies = "required-after:forge@[14.23.5.2860,);")
 public class Baubles {
 
-	public static final String MODID = "baubles";
-	public static final String MODNAME = "Baubles";
-	public static final String VERSION = "1.12.2-1.0.6.1";
-	public static final Logger log = LogManager.getLogger(MODID.toUpperCase());
-	public static final int GUI = 0;
-	@SidedProxy(clientSide = "baubles.client.ClientProxy", serverSide = "baubles.common.CommonProxy")
-	public static CommonProxy proxy;
-	@Instance(value = Baubles.MODID)
-	public static Baubles instance;
-	public File modDir;
+        public static final String MODID = "baubles";
+        public static final String MODNAME = "Baubles LTS";
+        public static final String VERSION = "1.12.2-1.0.6.2-perf";
+        public static final Logger log = LogManager.getLogger(MODID.toUpperCase());
+        public static final int GUI = 0;
+        @SidedProxy(clientSide = "baubles.client.ClientProxy", serverSide = "baubles.common.CommonProxy")
+        public static CommonProxy proxy;
+        @Instance(value = Baubles.MODID)
+        public static Baubles instance;
+        public File modDir;
 
-	private static void send(String id, Object msg) {
-		FMLInterModComms.sendMessage(MODID, id, msg.toString());
-	}
+        private static void send(String id, Object msg) {
+                FMLInterModComms.sendMessage(MODID, id, msg.toString());
+        }
 
-	@EventHandler
-	public void preInit(FMLPreInitializationEvent event) {
-		modDir = event.getModConfigurationDirectory();
+        @EventHandler
+        public void preInit(FMLPreInitializationEvent event) {
+                modDir = event.getModConfigurationDirectory();
 
-		try {
-			Config.initialize(event.getSuggestedConfigurationFile());
-		} catch (Exception e) {
-			Baubles.log.fatal("Baubles has a problem loading it's configuration");
-		} finally {
-			if (Config.config != null) {
-				Config.save();
-			}
-		}
-
-
-		// Init the capabilities
-		BaublesCapabilityManager.init();
-		// TODO: might delete
-		//CapabilityManager.INSTANCE.register(IBaublesItemHandler.class, new CapabilityBaubles<>(), BaublesContainer::new);
-
-		// TODO: might delete
-		/*CapabilityManager.INSTANCE.register
-				(
-						IBauble.class,
-						new BaublesCapabilities.CapabilityItemBaubleStorage(),
-						() -> new BaubleItem(BaubleType.TRINKET)
-				);*/
+                try {
+                        Config.initialize(event.getSuggestedConfigurationFile());
+                } catch (Exception e) {
+                        Baubles.log.fatal("Baubles has a problem loading it's configuration");
+                } finally {
+                        if (Config.config != null) {
+                                Config.save();
+                        }
+                }
 
 
-		proxy.registerEventHandlers();
-		PacketHandler.init();
+                // Init the capabilities
+                BaublesCapabilityManager.init();
+                // TODO: might delete
+                //CapabilityManager.INSTANCE.register(IBaublesItemHandler.class, new CapabilityBaubles<>(), BaublesContainer::new);
 
-		Config.save();
-	}
+                // TODO: might delete
+                /*CapabilityManager.INSTANCE.register
+                                (
+                                                IBauble.class,
+                                                new BaublesCapabilities.CapabilityItemBaubleStorage(),
+                                                () -> new BaubleItem(BaubleType.TRINKET)
+                                );*/
 
-	@EventHandler
-	public void init(FMLInitializationEvent evt) {
-		NetworkRegistry.INSTANCE.registerGuiHandler(instance, proxy);
-		proxy.init();
-	}
 
-	@EventHandler
-	public void serverLoad(FMLServerStartingEvent event) {
-		event.registerServerCommand(new CommandBaubles());
-	}
+                proxy.registerEventHandlers();
+                PacketHandler.init();
 
-	private void process(FMLInterModComms.IMCEvent evt) {
-		BaubleType.processBaubleTypes(evt.getMessages().stream(), evt.getMessages().stream());
-	}
+                Config.save();
+        }
+
+        @EventHandler
+        public void init(FMLInitializationEvent evt) {
+                NetworkRegistry.INSTANCE.registerGuiHandler(instance, proxy);
+                proxy.init();
+        }
+
+        @EventHandler
+        public void serverLoad(FMLServerStartingEvent event) {
+                event.registerServerCommand(new CommandBaubles());
+        }
+
+        private void process(FMLInterModComms.IMCEvent evt) {
+                BaubleType.processBaubleTypes(evt.getMessages().stream(), evt.getMessages().stream());
+        }
 }

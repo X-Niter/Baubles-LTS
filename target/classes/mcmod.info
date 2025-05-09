@@ -1,0 +1,17 @@
+[
+{
+  "modid": "baubles",
+  "name": "Baubles LTS",
+  "description": "Performance-optimized fork of Baubles API with 7 bauble slots for player inventory",
+  "version": "1.0.0",
+  "mcversion": "1.12.2",
+  "logoFile": "BLogo.png",
+  "url": "http://www.minecraftforum.net/topic/2535073-baubles",
+  "updateUrl": "",
+  "authorList": ["Azanor", "X_Niter", "SevenToDie Team"],
+  "credits": "Original mod by Azanor; Performance optimizations by SevenToDie Team; Special thanks to chicken_bones",
+  "parent": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

@@ -1,0 +1,10 @@
+com/seventodie/listeners/PlayerListener.class
+com/seventodie/util/Config.class
+com/seventodie/commands/BaublesCommand.class
+com/seventodie/manager/BaubleManager$1.class
+com/seventodie/api/BaubleType.class
+com/seventodie/api/IBauble.class
+com/seventodie/manager/BaubleManager.class
+com/seventodie/listeners/InventoryListener.class
+com/seventodie/SevenToDie.class
+com/seventodie/listeners/InventoryListener$1.class
